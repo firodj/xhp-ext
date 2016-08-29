@@ -1,5 +1,5 @@
 --TEST--
-Reflection API 05
+Reflection API 05 (PHP 7.0)
 --FILE--
 <?php
 class foo {
@@ -10,4 +10,4 @@ echo $foo->getDocComment();
 exit;
 <a />;
 --EXPECT--
-/** d */
+/** e */

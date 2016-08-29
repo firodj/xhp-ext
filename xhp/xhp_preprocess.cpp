@@ -63,7 +63,6 @@ XHPResult xhp_preprocess(std::string &in, std::string &out, std::string &errDesc
   extra.include_debug = flags.include_debug;
   extra.insert_token = flags.eval ? T_OPEN_TAG_FAKE : 0;
   extra.short_tags = flags.short_tags;
-  extra.asp_tags = flags.asp_tags;
   extra.force_global_namespace = flags.force_global_namespace;
 
   xhplex_init(&scanner);

@@ -371,14 +371,19 @@ ZEND_FUNCTION(__xhp_idx) {
         case IS_FALSE:
         case IS_LONG:
           long loffset;
-          zval **value;
+          zval *value;
           if (Z_TYPE_P(offset) == IS_DOUBLE) {
             loffset = (long)Z_DVAL_P(offset);
+          } else if (Z_TYPE_P(offset) == IS_TRUE) {
+            loffset = 1;
+          } else if (Z_TYPE_P(offset) == IS_FALSE) {
+            loffset = 0;
           } else {
             loffset = Z_LVAL_P(offset);
           }
-          if (zend_hash_index_find(Z_ARRVAL_P(dict), loffset /* (void **) &value*/) != NULL) {
-            *return_value = **value;
+          value = zend_hash_index_find(Z_ARRVAL_P(dict), loffset);
+          if (value != NULL) {
+            *return_value = *value;
             break;
           }
           zend_error(E_NOTICE, "Undefined offset:  %ld", loffset);
@@ -386,8 +391,9 @@ ZEND_FUNCTION(__xhp_idx) {
           break;
 
         case IS_STRING:
-          if (zend_symtable_find(Z_ARRVAL_P(dict), Z_STR_P(offset) /* (void **) &value */) != NULL) {
-            *return_value = **value;
+          value = zend_symtable_find(Z_ARRVAL_P(dict), Z_STR_P(offset));
+          if (value != NULL) {
+            *return_value = *value;
             break;
           }
           zend_error(E_NOTICE, "Undefined index:  %s", Z_STRVAL(*offset));
@@ -395,8 +401,9 @@ ZEND_FUNCTION(__xhp_idx) {
           break;
 
         case IS_NULL:
-          if (zend_hash_str_find(Z_ARRVAL_P(dict), "", sizeof("")-1 /* (void **) &value*/) != NULL) {
-            *return_value = **value;
+          value = zend_hash_str_find(Z_ARRVAL_P(dict), "", sizeof("") - 1);
+          if (value != NULL) {
+            *return_value = *value;
             break;
           }
           zend_error(E_NOTICE, "Undefined index:  ");
@@ -417,7 +424,6 @@ ZEND_FUNCTION(__xhp_idx) {
       switch (Z_TYPE_P(offset)) {
         case IS_LONG:
         case IS_TRUE:
-        case IS_FALSE:
           loffset = Z_LVAL_P(offset);
           break;
 
@@ -425,6 +431,7 @@ ZEND_FUNCTION(__xhp_idx) {
           loffset = (long)Z_DVAL_P(offset);
           break;
 
+        case IS_FALSE:
         case IS_NULL:
           loffset = 0;
           break;
