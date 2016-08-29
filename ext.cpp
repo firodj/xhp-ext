@@ -157,7 +157,6 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
   string* code_to_give_to_php;
 
   memset(&flags, 0, sizeof(xhp_flags_t));
-  flags.asp_tags = CG(asp_tags);
   flags.short_tags = CG(short_tags);
   flags.idx_expr = XHPG(idx_expr);
   flags.include_debug = XHPG(include_debug);
@@ -172,7 +171,9 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
     // Bubble error up to PHP
     CG(in_compilation) = true;
     CG(zend_lineno) = error_lineno;
-    zend_set_compiled_filename(const_cast<char*>(f->filename) TSRMLS_CC);
+    zend_string *str = zend_string_init(f->filename, strlen(f->filename), 0);
+    zend_set_compiled_filename(str  TSRMLS_CC);
+    zend_string_release(str);
     zend_error(E_PARSE, "%s", error_str.c_str());
     zend_bailout();
   } else if (result == XHPRewrote) {
@@ -183,7 +184,7 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
 
   // Create a fake file to give back to PHP to handle
   zend_file_handle fake_file;
-  fake_file.opened_path = f->opened_path ? estrdup(f->opened_path) : NULL;
+  fake_file.opened_path = f->opened_path ? zend_string_dup(f->opened_path, 0) : NULL;
   fake_file.filename = f->filename;
   fake_file.free_filename = false;
 
@@ -222,13 +223,13 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
   // Cast to str
   zval tmp;
   char* val;
-  if (str->type != IS_STRING) {
+  if (Z_TYPE_P(str) != IS_STRING) {
     tmp = *str;
     zval_copy_ctor(&tmp);
     convert_to_string(&tmp);
-    val = tmp.value.str.val;
+    val = Z_STRVAL(tmp);
   } else {
-    val = str->value.str.val;; 
+    val = Z_STRVAL_P(str);
   }
 
   // Process XHP
@@ -239,7 +240,6 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
   xhp_flags_t flags;
 
   memset(&flags, 0, sizeof(xhp_flags_t));
-  flags.asp_tags = CG(asp_tags);
   flags.short_tags = CG(short_tags);
   flags.idx_expr = XHPG(idx_expr);
   flags.include_debug = XHPG(include_debug);
@@ -248,7 +248,7 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
   XHPResult result = xhp_preprocess(original_code, rewrit, error_str, error_lineno, flags);
 
   // Destroy temporary in the case of non-string input (why?)
-  if (str->type != IS_STRING) {
+  if (Z_TYPE_P(str) != IS_STRING) {
     zval_dtor(&tmp);
   }
 
@@ -263,13 +263,15 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
     CG(in_compilation) = original_in_compilation;
     return NULL;
   } else if (result == XHPRewrote) {
+    zend_string *str;
 
     // Create another tmp zval with the rewritten PHP code and pass it to the original function
-    INIT_ZVAL(tmp);
-    tmp.type = IS_STRING;
-    tmp.value.str.val = const_cast<char*>(rewrit.c_str());
-    tmp.value.str.len = rewrit.size();
+    
+    str = zend_string_init(const_cast<char*>(rewrit.c_str()), rewrit.size(), 0);
+    ZVAL_STR(&tmp, str);
+
     zend_op_array* ret = dist_compile_string(&tmp, filename TSRMLS_CC);
+    zend_string_free(str);
     return ret;
   } else {
     return dist_compile_string(str, filename TSRMLS_CC);
@@ -305,8 +307,8 @@ static PHP_MINIT_FUNCTION(xhp) {
   // file as usual.
   zend_module_entry *apc_lookup;
   zend_constant *apc_magic;
-  if (zend_hash_find(&module_registry, "apc", sizeof("apc"), (void**)&apc_lookup) != FAILURE &&
-      zend_hash_find(EG(zend_constants), "\000apc_magic", 11, (void**)&apc_magic) != FAILURE) {
+  if (zend_hash_str_find(&module_registry, "apc", sizeof("apc")-1 /* (void**)&apc_lookup*/) != NULL &&
+      zend_hash_str_find(EG(zend_constants), "\000apc_magic", 10 /* (void**)&apc_magic */) != NULL) {
     zend_compile_file_t* (*apc_set_compile_file)(zend_compile_file_t*) = (zend_compile_file_t* (*)(zend_compile_file_t*))apc_magic->value.value.lval;
     dist_compile_file = apc_set_compile_file(NULL);
     apc_set_compile_file(xhp_compile_file);
@@ -349,7 +351,8 @@ ZEND_FUNCTION(__xhp_idx) {
     //
     // These are always NULL
     case IS_NULL:
-    case IS_BOOL:
+    case IS_TRUE:
+    case IS_FALSE:
     case IS_LONG:
     case IS_DOUBLE:
     default:
@@ -364,7 +367,8 @@ ZEND_FUNCTION(__xhp_idx) {
           zend_error(E_STRICT, "Resource ID#%ld used as offset, casting to integer (%ld)", Z_LVAL_P(offset), Z_LVAL_P(offset));
           /* Fall Through */
         case IS_DOUBLE:
-        case IS_BOOL:
+        case IS_TRUE:
+        case IS_FALSE:
         case IS_LONG:
           long loffset;
           zval **value;
@@ -373,7 +377,7 @@ ZEND_FUNCTION(__xhp_idx) {
           } else {
             loffset = Z_LVAL_P(offset);
           }
-          if (zend_hash_index_find(Z_ARRVAL_P(dict), loffset, (void **) &value) == SUCCESS) {
+          if (zend_hash_index_find(Z_ARRVAL_P(dict), loffset /* (void **) &value*/) != NULL) {
             *return_value = **value;
             break;
           }
@@ -382,16 +386,16 @@ ZEND_FUNCTION(__xhp_idx) {
           break;
 
         case IS_STRING:
-          if (zend_symtable_find(Z_ARRVAL_P(dict), offset->value.str.val, offset->value.str.len+1, (void **) &value) == SUCCESS) {
+          if (zend_symtable_find(Z_ARRVAL_P(dict), Z_STR_P(offset) /* (void **) &value */) != NULL) {
             *return_value = **value;
             break;
           }
-          zend_error(E_NOTICE, "Undefined index:  %s", offset->value.str.val);
+          zend_error(E_NOTICE, "Undefined index:  %s", Z_STRVAL(*offset));
           RETURN_NULL();
           break;
 
         case IS_NULL:
-          if (zend_hash_find(Z_ARRVAL_P(dict), "", sizeof(""), (void **) &value) == SUCCESS) {
+          if (zend_hash_str_find(Z_ARRVAL_P(dict), "", sizeof("")-1 /* (void **) &value*/) != NULL) {
             *return_value = **value;
             break;
           }
@@ -412,7 +416,8 @@ ZEND_FUNCTION(__xhp_idx) {
       long loffset;
       switch (Z_TYPE_P(offset)) {
         case IS_LONG:
-        case IS_BOOL:
+        case IS_TRUE:
+        case IS_FALSE:
           loffset = Z_LVAL_P(offset);
           break;
 
@@ -442,7 +447,7 @@ ZEND_FUNCTION(__xhp_idx) {
         zend_error(E_NOTICE, "Uninitialized string offset: %ld", loffset);
         RETURN_NULL();
       }
-      RETURN_STRINGL(Z_STRVAL_P(dict) + loffset, 1, true);
+      RETURN_STRINGL(Z_STRVAL_P(dict) + loffset, 1);
       break;
 
     //
@@ -452,7 +457,8 @@ ZEND_FUNCTION(__xhp_idx) {
         zend_error(E_ERROR, "Cannot use object as array");
         RETURN_NULL();
       } else {
-        zval* overloaded_result = Z_OBJ_HT_P(dict)->read_dimension(dict, offset, BP_VAR_R TSRMLS_CC);
+        zval rv;
+        zval* overloaded_result = Z_OBJ_HT_P(dict)->read_dimension(dict, offset, BP_VAR_R, &rv /* TSRMLS_CC */);
         if (overloaded_result) {
           *return_value = *overloaded_result;
         } else {
@@ -483,10 +489,10 @@ ZEND_FUNCTION(xhp_preprocess_code) {
   // Build return code
   array_init(return_value);
   if (result == XHPErred) {
-    add_assoc_string(return_value, "error", const_cast<char*>(error.c_str()), true);
+    add_assoc_string(return_value, "error", const_cast<char*>(error.c_str()));
     add_assoc_long(return_value, "error_line", error_line);
   } else if (result == XHPRewrote) {
-    add_assoc_string(return_value, "new_code", const_cast<char*>(rewrit.c_str()), true);
+    add_assoc_string(return_value, "new_code", const_cast<char*>(rewrit.c_str()));
   }
 }
 
