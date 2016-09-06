@@ -149,6 +149,7 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_DOUBLE_ARROW
 %token T_LIST
 %token T_ARRAY
+%token T_CALLABLE
 %token T_CLASS_C
 %token T_METHOD_C
 %token T_FUNC_C
@@ -223,6 +224,12 @@ namespace_name:
 | namespace_name T_NS_SEPARATOR T_STRING {
     $$ = $1 + $2 + $3;
   }
+;
+
+name:
+  namespace_name	{ $$ = $1; }
+| T_NAMESPACE T_NS_SEPARATOR namespace_name	{ $$ = $1 + $2 + $3; }
+| T_NS_SEPARATOR namespace_name			{ $$ = $1 + $2; }
 ;
 
 top_statement:
@@ -689,6 +696,22 @@ optional_class_type:
   }
 ;
 
+type_expr:
+  type	   { $$ = $1; }
+| '?' type { $$ = $1 + $2; }
+;
+
+type:
+  T_ARRAY	{ $$ = $1; }
+| T_CALLABLE	{ $$ = $1; }
+| name		{ $$ = $1; }
+;
+
+return_type:
+  /* empty */	{ $$ = ""; }
+| ':' type_expr	{ $$ = $1 + " " + $2; }
+;
+
 function_call_parameter_list:
   non_empty_function_call_parameter_list
 | non_empty_function_call_parameter_list ',' variadic_parameter {
@@ -766,9 +789,9 @@ class_statement:
 | method_modifiers function {
     yyextra->old_expecting_xhp_class_statements = yyextra->expecting_xhp_class_statements;
     yyextra->expecting_xhp_class_statements = false;
-  } is_reference T_STRING '(' parameter_list ')' method_body {
+  } is_reference T_STRING '(' parameter_list ')' return_type method_body {
     yyextra->expecting_xhp_class_statements = yyextra->old_expecting_xhp_class_statements;
-    $$ = $1 + $2 + " " + $4 + $5 + $6 + $7 + $8 + $9;
+    $$ = $1 + $2 + " " + $4 + $5 + $6 + $7 + $8 + $9 + $10;
   }
 ;
 
