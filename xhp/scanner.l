@@ -174,6 +174,11 @@ NEWLINE ("\r\n"|"\n"|"\r")
     // the state transition will be done in yy_token()
     tok(T_OPEN_TAG);
   }
+  "<?hh"([ \t]|{NEWLINE}) {
+    yy_scan_newlines(yytext + 4, yyg);
+    // the state transition will be done in yy_token()
+    tok(T_OPEN_TAG);
+  }
   "<?" {
     if (yyextra->short_tags) {
       tok(T_OPEN_TAG);

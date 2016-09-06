@@ -308,7 +308,9 @@ statement:
 | T_STRING ':' {
     $$ = $1 + $2;
   }
-| T_OPEN_TAG
+| T_OPEN_TAG {
+    $$ = "<?php\n";
+  }
 | T_OPEN_TAG_WITH_ECHO
 | T_OPEN_TAG_FAKE {
     $$ = "";
