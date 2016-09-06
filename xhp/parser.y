@@ -914,7 +914,7 @@ class_variable_declarations:
 
 class_variable_declaration:
   T_VARIABLE
-| T_VARIABLE '=' static_scalar {
+| T_VARIABLE '=' expr {
     $$ = $1 + $2 + $3;
   }
 ;
