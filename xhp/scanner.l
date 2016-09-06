@@ -403,6 +403,7 @@ NEWLINE ("\r\n"|"\n"|"\r")
   "=>" tok(T_DOUBLE_ARROW);
   "::" tok(T_PAAMAYIM_NEKUDOTAYIM);
   "\\" tok(T_NS_SEPARATOR);
+  "??" tok(T_COALESCE);
   ":" {
     // A colon can either mean the start (or component) of an XHP class,
     // a ternary expression (as in 1?false:null), the colon of a 'case', 

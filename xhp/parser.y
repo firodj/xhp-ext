@@ -75,6 +75,7 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %right T_PRINT
 %left '=' T_PLUS_EQUAL T_MINUS_EQUAL T_MUL_EQUAL T_DIV_EQUAL T_CONCAT_EQUAL T_MOD_EQUAL T_AND_EQUAL T_OR_EQUAL T_XOR_EQUAL T_SL_EQUAL T_SR_EQUAL
 %left '?' ':'
+%left T_COALESCE
 %left T_BOOLEAN_OR
 %left T_BOOLEAN_AND
 %left '|'
@@ -179,6 +180,7 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_INSTEADOF
 %token T_YIELD
 %token T_VARIADIC_PARAMETER
+%token T_COALESCE
 
 %token T_XHP_WHITESPACE
 %token T_XHP_TEXT
@@ -1177,6 +1179,9 @@ expr_without_variable:
   }
 | expr '?' ':' expr {
     $$ = $1 + $2 + $3 + $4;
+  }
+| expr T_COALESCE expr {
+    $$ = $1 + $2 + $3;
   }
 | internal_functions_in_yacc
 | T_INT_CAST expr {
