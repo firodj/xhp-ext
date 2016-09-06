@@ -698,11 +698,6 @@ optional_class_type:
   }
 ;
 
-type_expr:
-  type	   { $$ = $1; }
-| '?' type { $$ = $1 + $2; }
-;
-
 type:
   T_ARRAY	{ $$ = $1; }
 | T_CALLABLE	{ $$ = $1; }
@@ -711,7 +706,7 @@ type:
 
 return_type:
   /* empty */	{ $$ = ""; }
-| ':' type_expr	{ $$ = $1 + " " + $2; }
+| ':' type	{ $$ = $1 + " " + $2; }
 ;
 
 function_call_parameter_list:
@@ -1231,11 +1226,11 @@ expr_without_variable:
 | T_PRINT expr {
     $$ = $1 + " " + $2;
   }
-| function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}' {
-    $$ = $1 + $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9;
+| function is_reference '(' parameter_list ')' lexical_vars return_type '{' inner_statement_list '}' {
+    $$ = $1 + $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 + $10;
   }
-| T_STATIC function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}' {
-    $$ = $1 + " " + $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 + $10;
+| T_STATIC function is_reference '(' parameter_list ')' lexical_vars return_type '{' inner_statement_list '}' {
+    $$ = $1 + " " + $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 + $10 + $11;
   }
 ;
 
