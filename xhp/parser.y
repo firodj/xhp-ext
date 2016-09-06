@@ -226,12 +226,6 @@ namespace_name:
   }
 ;
 
-name:
-  namespace_name	{ $$ = $1; }
-| T_NAMESPACE T_NS_SEPARATOR namespace_name	{ $$ = $1 + $2 + $3; }
-| T_NS_SEPARATOR namespace_name			{ $$ = $1 + $2; }
-;
-
 top_statement:
   statement
 | function_declaration_statement
@@ -701,7 +695,7 @@ optional_class_type:
 type:
   T_ARRAY	{ $$ = $1; }
 | T_CALLABLE	{ $$ = $1; }
-| name		{ $$ = $1; }
+| fully_qualified_class_name		{ $$ = $1; }
 ;
 
 return_type:
