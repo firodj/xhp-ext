@@ -756,7 +756,7 @@ class_statement_list:
 ;
 
 class_statement:
-  variable_modifiers class_variable_declaration ';' {
+  variable_modifiers class_variable_declarations ';' {
     $$ = $1 + " " + $2 + $3;
   }
 | class_constant_declaration ';' {
@@ -905,14 +905,15 @@ member_modifier:
 | T_FINAL
 ;
 
-class_variable_declaration:
-  class_variable_declaration ',' T_VARIABLE {
+class_variable_declarations:
+  class_variable_declarations ',' class_variable_declaration {
     $$ = $1 + $2 + $3;
   }
-| class_variable_declaration ',' T_VARIABLE '=' static_scalar {
-    $$ = $1 + $2 + $3 + $4 + $5;
-  }
-| T_VARIABLE
+| class_variable_declaration
+;
+
+class_variable_declaration:
+  T_VARIABLE
 | T_VARIABLE '=' static_scalar {
     $$ = $1 + $2 + $3;
   }
