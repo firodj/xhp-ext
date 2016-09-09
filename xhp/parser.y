@@ -2075,11 +2075,7 @@ xhp_attribute_enum:
 ;
 
 xhp_attribute_default:
-  '=' common_scalar {
-    $2.strip_lines();
-    $$ = $2;
-  }
-| '=' T_STRING {
+  '=' static_scalar {
     $2.strip_lines();
     $$ = $2;
   }
