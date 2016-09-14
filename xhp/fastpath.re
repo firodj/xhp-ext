@@ -55,6 +55,14 @@ bool xhp_fastpath(const char* yy, const size_t len, const xhp_flags_t &flags) {
     <*> [^\x00] { continue; }
 
     <HTML> '<?php'([ \t]|NEWLINE) {
+      if (flags.moderate_parse) {
+        result = false;
+        break;
+      }
+      state = PHP;
+      continue;
+    }
+    <HTML> '<?php'[ \t]'// xhp' {
       state = PHP;
       continue;
     }

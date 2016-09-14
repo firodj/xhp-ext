@@ -39,6 +39,7 @@ XHPResult xhp_preprocess(string &in, string &out, bool isEval, string &errDescri
   flags.idx_expr = true;
   flags.include_debug = true;
   flags.force_global_namespace = true;
+  flags.moderate_parse = false;
   return xhp_preprocess(in, out, errDescription, errLineno, flags);
 }
 

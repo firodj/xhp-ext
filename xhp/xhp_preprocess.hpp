@@ -32,6 +32,7 @@ struct xhp_flags_t {
   bool include_debug;
   bool eval;
   bool force_global_namespace;
+  bool moderate_parse;
 };
 
 XHPResult xhp_preprocess(std::istream &in, std::string &out, bool isEval,

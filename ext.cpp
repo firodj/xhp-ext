@@ -50,6 +50,7 @@ ZEND_BEGIN_MODULE_GLOBALS(xhp)
   bool idx_expr;
   bool include_debug;
   bool force_global_namespace;
+  bool moderate_parse;
 ZEND_END_MODULE_GLOBALS(xhp)
 ZEND_DECLARE_MODULE_GLOBALS(xhp)
 
@@ -165,6 +166,7 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
 #else
   flags.force_global_namespace = false;
 #endif
+  flags.moderate_parse = XHPG(moderate_parse);
   result = xhp_preprocess(original_code, rewrit, error_str, error_lineno, flags);
 
   if (result == XHPErred) {
@@ -245,6 +247,7 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
   flags.include_debug = XHPG(include_debug);
   flags.force_global_namespace = XHPG(force_global_namespace);
   flags.eval = true;
+  flags.moderate_parse = false;
   XHPResult result = xhp_preprocess(original_code, rewrit, error_str, error_lineno, flags);
 
   // Destroy temporary in the case of non-string input (why?)
@@ -292,6 +295,7 @@ PHP_INI_BEGIN()
   STD_PHP_INI_BOOLEAN("xhp.idx_expr", "0", PHP_INI_PERDIR, OnUpdateBool, idx_expr, zend_xhp_globals, xhp_globals)
   STD_PHP_INI_BOOLEAN("xhp.include_debug", "1", PHP_INI_PERDIR, OnUpdateBool, include_debug, zend_xhp_globals, xhp_globals)
   STD_PHP_INI_BOOLEAN("xhp.force_global_namespace", "1", PHP_INI_PERDIR, OnUpdateBool, force_global_namespace, zend_xhp_globals, xhp_globals)
+  STD_PHP_INI_BOOLEAN("xhp.moderate_parse", "0", PHP_INI_PERDIR, OnUpdateBool, moderate_parse, zend_xhp_globals, xhp_globals)
 PHP_INI_END()
 
 //
