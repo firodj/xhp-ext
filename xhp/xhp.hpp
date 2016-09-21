@@ -35,6 +35,7 @@ class yy_extra_type {
       has_doc_block = false;
       force_global_namespace = false;
       expecting_xhp_class_statements = false;
+      hh_tags = false;
       pushStack();
     }
 
@@ -61,6 +62,7 @@ class yy_extra_type {
     bool used_attributes; // did this class use the `attribute` keyword
     code_rope attribute_decls; // array keys and values for __xhpAttributeDescription
     code_rope attribute_inherit; // from which classes this class should inherit attributes
+    bool hh_tags;
 
     /* Utility functions for checking proper tag closing */
     bool haveTag() {

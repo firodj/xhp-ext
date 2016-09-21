@@ -177,6 +177,7 @@ NEWLINE ("\r\n"|"\n"|"\r")
   "<?hh"([ \t]|{NEWLINE}) {
     yy_scan_newlines(yytext + 4, yyg);
     // the state transition will be done in yy_token()
+    yyextra->hh_tags = true;
     tok(T_OPEN_TAG);
   }
   "<?" {

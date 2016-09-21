@@ -68,7 +68,8 @@ bool xhp_fastpath(const char* yy, const size_t len, const xhp_flags_t &flags) {
     }
     <HTML> '<?hh'([ \t]|NEWLINE) {
       state = PHP;
-      continue;
+      result = true;
+      break;
     }
     <HTML> '<?='|'<?' {
       if (flags.short_tags) {
