@@ -101,4 +101,3 @@ int xhpparse(void*, code_rope*);
 void xhp_new_push_state(int s, struct yyguts_t* yyg);
 void xhp_new_pop_state(struct yyguts_t* yyg);
 void xhp_set_state(int s, struct yyguts_t* yyg);
-const char* yytokname(int tok);

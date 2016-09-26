@@ -24,6 +24,8 @@ using namespace std;
 extern int xhpdebug;
 #include <iostream>
 
+const char* yytokname(int tok);
+
 XHPResult xhp_preprocess(istream &in, string &out, bool isEval, string &errDescription, uint32_t &errLineno) {
 
   // Read stream to string
@@ -107,26 +109,84 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
   buffer[in.size() + 1] = 0; // need double NULL for scan_buffer
 
   // Parse the PHP
-  void *scanner;
-  code_rope new_code;
-  yy_extra_type extra;
+  void *lex_state;
+  xhp_init_lexical_state(buffer, in.size()+2, &lex_state);
+  char *code_str;
 
-  xhplex_init(&scanner);
-  xhpset_extra(&extra, scanner);
-  xhp_scan_buffer(buffer, in.size() + 2, scanner);
-
-  int tok;
-  while(tok = xhplex(&new_code, scanner)) {
+  int64_t tok;
+  while(tok = xhp_lex(&code_str, lex_state)) {
     stringstream ss;
     if (tok < 255) {
-        ss << "(" << tok << ")";
+        if (tok >= 20 && tok <= 126) {
+            ss << "(" << tok << " " << char(tok) << ")";
+        } else {
+            ss << "(" << tok << ")";
+        }
     } else {
         ss << "[" << yytokname(tok) << "]";
+        ss << code_str;
     }
     out += ss.str();
   }
 
-  xhplex_destroy(scanner);
+  xhp_destroy_lexical_state(lex_state);
 
   return XHPDidNothing;
+}
+
+const char * xhp_get_token_type_name(int64_t tok)
+{
+  return yytokname(tok);
+}
+
+//
+// Internal Struct
+struct xhp_lex_state_t
+{
+public:
+  xhp_lex_state_t() {
+    this->scanner = 0;
+  }
+
+  void *scanner;
+  code_rope new_code;
+  yy_extra_type extra;
+};
+
+int64_t
+xhp_lex(char **code_str, void *lex_state)
+{
+  xhp_lex_state_t *l = static_cast<xhp_lex_state_t*>(lex_state);
+  if (l) {
+    int64_t tok = xhplex(&l->new_code, l->scanner);
+    if (tok) {
+      *code_str = (char*)l->new_code.c_str();
+    } else {
+      *code_str = 0;
+    }
+    return tok;
+  }
+  return 0;
+}
+
+void
+xhp_init_lexical_state(char *buffer, size_t size, void **lex_state)
+{
+  xhp_lex_state_t *l = new xhp_lex_state_t();
+
+  xhplex_init(&l->scanner);
+  xhpset_extra(&l->extra, l->scanner);
+  xhp_scan_buffer(buffer, size, l->scanner);
+
+  *lex_state = l;
+}
+
+void
+xhp_destroy_lexical_state(void *lex_state)
+{
+    xhp_lex_state_t *l = static_cast<xhp_lex_state_t*>(lex_state);
+    if (l) {
+       xhplex_destroy(l->scanner);
+       delete l;
+    }
 }
