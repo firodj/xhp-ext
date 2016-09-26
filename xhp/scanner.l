@@ -135,7 +135,6 @@ static bool utf8ize(uint32_t v, char* buf /* [5] */) {
 %option interactive
 
  /* to get a Flex debug trace, uncomment %option debug, and uncomment
-  * 'yy_flex_debug = 1;' in Scanner::init() below.
   *
   * %option debug
   */

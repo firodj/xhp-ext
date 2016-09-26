@@ -73,15 +73,18 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %left T_LOGICAL_XOR
 %left T_LOGICAL_AND
 %right T_PRINT
-%left '=' T_PLUS_EQUAL T_MINUS_EQUAL T_MUL_EQUAL T_DIV_EQUAL T_CONCAT_EQUAL T_MOD_EQUAL T_AND_EQUAL T_OR_EQUAL T_XOR_EQUAL T_SL_EQUAL T_SR_EQUAL
+%right T_YIELD
+%right T_DOUBLE_ARROW
+%right T_YIELD_FROM
+%left '=' T_PLUS_EQUAL T_MINUS_EQUAL T_MUL_EQUAL T_DIV_EQUAL T_CONCAT_EQUAL T_MOD_EQUAL T_AND_EQUAL T_OR_EQUAL T_XOR_EQUAL T_SL_EQUAL T_SR_EQUAL T_POW_EQUAL
 %left '?' ':'
-%left T_COALESCE
+%right T_COALESCE
 %left T_BOOLEAN_OR
 %left T_BOOLEAN_AND
 %left '|'
 %left '^'
 %left '&'
-%nonassoc T_IS_EQUAL T_IS_NOT_EQUAL T_IS_IDENTICAL T_IS_NOT_IDENTICAL
+%nonassoc T_IS_EQUAL T_IS_NOT_EQUAL T_IS_IDENTICAL T_IS_NOT_IDENTICAL T_SPACESHIP
 %nonassoc '<' T_IS_SMALLER_OR_EQUAL '>' T_IS_GREATER_OR_EQUAL
 %left T_SL T_SR
 %left '+' '-' '.'
@@ -89,13 +92,17 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %right '!'
 %nonassoc T_INSTANCEOF
 %right '~' T_INC T_DEC T_INT_CAST T_DOUBLE_CAST T_STRING_CAST T_UNICODE_CAST T_BINARY_CAST T_ARRAY_CAST T_OBJECT_CAST T_BOOL_CAST T_UNSET_CAST '@'
+%right T_POW
 %right '['
 %nonassoc T_NEW T_CLONE
-%token T_EXIT
-%token T_IF
+%left T_NOELSE
 %left T_ELSEIF
 %left T_ELSE
 %left T_ENDIF
+%right T_STATIC T_ABSTRACT T_FINAL T_PRIVATE T_PROTECTED T_PUBLIC
+
+%token T_EXIT
+%token T_IF
 
 %token T_LNUMBER
 %token T_DNUMBER
@@ -108,6 +115,7 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_BAD_CHARACTER /* unused in vanilla PHP */
 %token T_ENCAPSED_AND_WHITESPACE /* unused in XHP: ` ` in `" "` */
 %token T_CONSTANT_ENCAPSED_STRING /* overloaded in XHP; replaces '"' encaps_list '"' */
+
 %token T_BACKTICKS_EXPR /* new in XHP; replaces '`' backticks_expr '`' */
 %token T_ECHO
 %token T_DO
@@ -136,7 +144,6 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_THROW
 %token T_USE
 %token T_GLOBAL
-%right T_STATIC T_ABSTRACT T_FINAL T_PRIVATE T_PROTECTED T_PUBLIC
 %token T_VAR
 %token T_UNSET
 %token T_ISSET
