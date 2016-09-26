@@ -210,6 +210,9 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_XHP_FLOAT
 %token T_XHP_CALLABLE
 %token T_XHP_REQUIRED
+%token T_XHP_LABEL
+%token T_UNRESOLVED_OP
+%token T_UNRESOLVED_LT
 
 %%
 

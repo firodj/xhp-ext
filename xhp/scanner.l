@@ -94,6 +94,120 @@ static bool utf8ize(uint32_t v, char* buf /* [5] */) {
   return true;
 }
 
+/**
+ * "Next token types" tell us how to interpret the next characters in the
+ * input stream based on the previous token for the purpose of recognizing
+ * XHP tags, XHP class names, XHP category names, type lists, and lambda
+ * expressions.
+ *   XhpTag:
+ *     "<"[a-zA-Z_\x7f-\xff] will be treated as the start of an XHP tag
+ *   XhpTagMaybe:
+ *     "<"[a-zA-Z_\x7f-\xff] will be treated as possibly being the start of an
+ *     XHP tag; we will scan ahead looking at subsequent characters to figure
+ *     out if "<" is definitely the start of an XHP tag
+ *   XhpClassName:
+ *     ":"{XHPLABEL} will be treated as an XHP class name
+ *   XhpCategoryName:
+ *     "%"{XHPLABEL} will be treated as an XHP category name
+ *   TypeListMaybe:
+ *     "<" should be recognized as possibly being the start of a type list;
+ *     this will be resolved by inspecting subsequent tokens
+ *   LambdaMaybe:
+ *     "(" should be recognized as possibly being the start of a lambda
+ *     expression; this will be resolved by inspecting subsequent tokens
+ */
+namespace NextTokenType {
+  static const int Normal = 0x1;
+  static const int XhpTag = 0x2;
+  static const int XhpTagMaybe = 0x4;
+  static const int XhpClassName = 0x8;
+  static const int XhpCategoryName = 0x10;
+}
+
+static int getNextTokenType(int t) {
+  switch (t) {
+    case '=': case '.': case '+': case '-': case '*': case '/': case '%':
+    case '!': case '~': case '&': case '^': case '<': case '>': case '?':
+    case ':': case '[': case '{': case ';': case '@': case -1:
+    case T_LOGICAL_OR:
+    case T_LOGICAL_XOR:
+    case T_LOGICAL_AND:
+    case T_SL:
+    case T_SR:
+    case T_BOOLEAN_OR:
+    case T_BOOLEAN_AND:
+    case T_IS_EQUAL:
+    case T_IS_NOT_EQUAL:
+    case T_IS_IDENTICAL:
+    case T_IS_NOT_IDENTICAL:
+    case T_IS_SMALLER_OR_EQUAL:
+    case T_IS_GREATER_OR_EQUAL:
+    case T_SPACESHIP:
+    case T_PLUS_EQUAL:
+    case T_MINUS_EQUAL:
+    case T_MUL_EQUAL:
+    case T_DIV_EQUAL:
+    case T_CONCAT_EQUAL:
+    case T_MOD_EQUAL:
+    case T_AND_EQUAL:
+    case T_OR_EQUAL:
+    case T_XOR_EQUAL:
+    case T_SL_EQUAL:
+    case T_SR_EQUAL:
+    case T_ECHO:
+    case T_PRINT:
+    case T_CLONE:
+    case T_EXIT:
+    case T_RETURN:
+    case T_YIELD:
+    case T_YIELD_FROM:
+    case T_NEW:
+    case T_INSTANCEOF:
+    case T_DOUBLE_ARROW:
+    case T_NS_SEPARATOR:
+    case T_INLINE_HTML:
+    case T_INT_CAST:
+    case T_DOUBLE_CAST:
+    case T_STRING_CAST:
+    case T_ARRAY_CAST:
+    case T_OBJECT_CAST:
+    case T_BOOL_CAST:
+    case T_UNSET_CAST:
+    case T_UNRESOLVED_LT:
+    case T_AS:
+      return NextTokenType::XhpTag |
+             NextTokenType::XhpClassName;
+    case ',': case '(': case '|': case T_UNRESOLVED_OP:
+      return NextTokenType::XhpTag |
+             NextTokenType::XhpClassName |
+             NextTokenType::XhpCategoryName;
+    case '}':
+      return NextTokenType::XhpTagMaybe |
+             NextTokenType::XhpClassName;
+    case T_INC:
+    case T_DEC:
+      return NextTokenType::XhpTagMaybe;
+    case T_EXTENDS:
+    case T_CLASS:
+    case T_PRIVATE:
+    case T_PROTECTED:
+    case T_PUBLIC:
+    case T_STATIC:
+      return NextTokenType::XhpClassName;
+    case T_STRING:
+    case T_XHP_CHILDREN:
+    case T_XHP_REQUIRED:
+    case T_XHP_ENUM:
+    case T_ARRAY:
+    case T_XHP_ATTRIBUTE:
+      return NextTokenType::XhpClassName;
+    case T_XHP_CATEGORY:
+      return NextTokenType::XhpCategoryName;
+    default:
+      return NextTokenType::Normal;
+  }
+}
+
 %}
 
  /* The different lexing states. Note that the transitions are done either
@@ -165,8 +279,6 @@ XHPLABEL {LABEL}([:-]{LABEL})*
   "mixed"    tok(T_XHP_MIXED);
   "array"    tok(T_XHP_ARRAY);
   "string"   tok(T_XHP_STRING);
-  "enum"     tok(T_XHP_ENUM);
-  @required  tok(T_XHP_REQUIRED);
   "("        tok('(');
   ":"        tok(T_XHP_COLON);
   ">>" {
@@ -358,29 +470,31 @@ XHPLABEL {LABEL}([:-]{LABEL})*
   attribute {
     // expecting_xhp_class_statements is set in some actions in the grammar.
     // This means the lexer and parser are interdependent.
-    if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
-        (yyextra->expecting_xhp_class_statements)) {
+    //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
+    //    (yyextra->expecting_xhp_class_statements)) {
       tok(T_XHP_ATTRIBUTE);
-    } else {
-      tok(T_STRING);
-    }
+    //} else {
+    //  tok(T_STRING);
+    //}
   }
   category {
-    if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
-        (yyextra->expecting_xhp_class_statements)) {
+    //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
+    //    (yyextra->expecting_xhp_class_statements)) {
       tok(T_XHP_CATEGORY);
-    } else {
-      tok(T_STRING);
-    }
+    //} else {
+    //  tok(T_STRING);
+    //}
   }
   children {
-    if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
-        (yyextra->expecting_xhp_class_statements)) {
+    //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
+    //    (yyextra->expecting_xhp_class_statements)) {
       tok(T_XHP_CHILDREN);
-    } else {
-      tok(T_STRING);
-    }
+    //} else {
+    //  tok(T_STRING);
+    //}
   }
+  "enum"     tok(T_XHP_ENUM);
+  "@required"  tok(T_XHP_REQUIRED);
 }
 
  /* Operators */
@@ -542,6 +656,16 @@ XHPLABEL {LABEL}([:-]{LABEL})*
 }
 
  /* XHP */
+<ST_PHP>":"{XHPLABEL}  {
+  int ntt = getNextTokenType(yyextra->last_token);
+  if (ntt & NextTokenType::XhpClassName) {
+    yytext++; yyleng--; // skipping the first colon
+    tok(T_XHP_LABEL);
+  }
+  yyless(1);
+  tok(':');
+}
+
 <ST_XHP_LABEL_WHITESPACE>{
   {WHITESPACE}+ yy_scan_newlines(yytext, yyg);
 }
