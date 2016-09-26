@@ -282,6 +282,16 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
 }
 
 //
+// tokenize
+static zend_bool tokenize(zval *return_value, zend_string *source)
+{
+  zval source_zval;
+  array_init(return_value);
+  
+  return 1;
+}
+
+//
 // globals initialization
 static void php_xhp_init_globals(zend_xhp_globals* xhp_globals) {
   xhp_globals->idx_expr = false;
@@ -508,10 +518,39 @@ ZEND_FUNCTION(xhp_preprocess_code) {
 }
 
 //
+// xhp_token_get_all
+PHP_FUNCTION(xhp_token_get_all) {
+  zend_string *source;
+  zend_bool success;
+
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &source) == FAILURE) {
+    return;
+  }
+
+  success = tokenize(return_value, source);
+
+  if (!success) RETURN_FALSE;
+}
+
+//
+// xhp_token_name
+PHP_FUNCTION(xhp_token_name) {
+  zend_long type;
+
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &type) == FAILURE) {
+    return;
+  }
+
+  RETVAL_STRING(xhp_get_token_type_name(type));
+}
+
+//
 // Module description
 zend_function_entry xhp_functions[] = {
   ZEND_FE(__xhp_idx, NULL)
   ZEND_FE(xhp_preprocess_code, NULL)
+  PHP_FE(xhp_token_get_all, NULL)
+  PHP_FE(xhp_token_name, NULL)
   {NULL, NULL, NULL}
 };
 
