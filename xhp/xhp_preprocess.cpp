@@ -18,7 +18,9 @@
 #include "xhp_preprocess.hpp"
 #include "fastpath.hpp"
 #include <sstream>
+
 using namespace std;
+
 extern int xhpdebug;
 #include <iostream>
 
@@ -86,4 +88,45 @@ XHPResult xhp_preprocess(std::string &in, std::string &out, std::string &errDesc
   } else {
     return XHPDidNothing;
   }
+}
+
+XHPResult xhp_tokenize(istream &in, string &out)
+{
+  // Read stream to string
+  stringbuf sb;
+  in >> noskipws >> &sb;
+  string buffer = sb.str();
+  return xhp_tokenize(buffer, out);
+}
+
+XHPResult xhp_tokenize(std::string &in, std::string &out)
+{
+  // Create a flex buffer
+  in.reserve(in.size() + 1);
+  char *buffer = const_cast<char*>(in.c_str());
+  buffer[in.size() + 1] = 0; // need double NULL for scan_buffer
+
+  // Parse the PHP
+  void *scanner;
+  code_rope new_code;
+  yy_extra_type extra;
+
+  xhplex_init(&scanner);
+  xhpset_extra(&extra, scanner);
+  xhp_scan_buffer(buffer, in.size() + 2, scanner);
+
+  int tok;
+  while(tok = xhplex(&new_code, scanner)) {
+    stringstream ss;
+    if (tok < 255) {
+        ss << "(" << tok << ")";
+    } else {
+        ss << "[" << yytokname(tok) << "]";
+    }
+    out += ss.str();
+  }
+
+  xhplex_destroy(scanner);
+
+  return XHPDidNothing;
 }

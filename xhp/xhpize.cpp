@@ -22,7 +22,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-  bool in_place = false, dry_run = false;
+  bool in_place = false, dry_run = false, tokenize = false;
   vector<string> files;
 
   // Parse args
@@ -31,6 +31,8 @@ int main(int argc, char* argv[]) {
       in_place = true;
     } else if (strcmp(argv[ii], "-d") == 0) {
       dry_run = true;
+    } else if (strcmp(argv[ii], "-t") == 0) {
+      tokenize = true;
     } else if (strcmp(argv[ii], "-h") == 0 || strcmp(argv[ii], "-?") == 0) {
       cerr<< argv[0] << " -i [files] | " << argv[0] << " [file]\n";
       return 1;
@@ -64,23 +66,29 @@ int main(int argc, char* argv[]) {
 
     string code, error;
     uint32_t errLine;
-    XHPResult result = xhp_preprocess(*inputStream, code, false, error, errLine);
-    inputFile.close();
-    if (result == XHPRewrote) {
-      if (in_place) {
-        if (!dry_run) {
-          ofstream outputFile(ii->c_str());
-          outputFile<< code;
-          outputFile.close();
+    if (tokenize) {
+      XHPResult result = xhp_tokenize(*inputStream, code);
+      cout<< code;
+      cout.flush();
+    } else {
+      XHPResult result = xhp_preprocess(*inputStream, code, false, error, errLine);
+      inputFile.close();
+      if (result == XHPRewrote) {
+        if (in_place) {
+          if (!dry_run) {
+            ofstream outputFile(ii->c_str());
+            outputFile<< code;
+            outputFile.close();
+          }
+        } else {
+          cout<< code;
+          cout.flush();
         }
-      } else {
-        cout<< code;
-        cout.flush();
+        cerr<< "File `"<<(*ii)<<"` xhpized.\n";
+      } else if (result == XHPErred) {
+        cerr<< "Error parsing file `"<<(*ii)<<"`!!\n" << error << " on line " <<
+          errLine << endl;;
       }
-      cerr<< "File `"<<(*ii)<<"` xhpized.\n";
-    } else if (result == XHPErred) {
-      cerr<< "Error parsing file `"<<(*ii)<<"`!!\n" << error << " on line " <<
-        errLine << endl;;
     }
   }
 

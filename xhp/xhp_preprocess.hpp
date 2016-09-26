@@ -44,3 +44,6 @@ XHPResult xhp_preprocess(std::string &in, std::string &out, bool isEval,
 XHPResult xhp_preprocess(std::string &in, std::string &out,
                          std::string &errDescription, uint32_t &errLineno,
                          const xhp_flags_t &flags);
+
+XHPResult xhp_tokenize(std::istream &in, std::string &out);
+XHPResult xhp_tokenize(std::string &in, std::string &out);
