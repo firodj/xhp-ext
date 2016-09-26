@@ -1715,7 +1715,7 @@ xhp_tag_expression:
 
 xhp_singleton:
   xhp_tag_start xhp_attributes '/' '>' {
-    pop_state(); // XHP_ATTRS
+    pop_state(); // ST_XHP_ATTRS
     if (yyextra->include_debug) {
       char line[16];
       sprintf(line, "%lu", (unsigned long)$1.lineno());
@@ -1728,8 +1728,8 @@ xhp_singleton:
 
 xhp_tag_open:
   xhp_tag_start xhp_attributes '>' {
-    pop_state(); // XHP_ATTRS
-    push_state(XHP_CHILD_START);
+    pop_state(); // ST_XHP_ATTRS
+    push_state(ST_XHP_CHILD_START);
     yyextra->pushTag($1.c_str());
     $$ = (yyextra->force_global_namespace ? "new \\xhp_" : "new xhp_") + $1 + "(array(" + $2 + "), array(";
   }
@@ -1737,7 +1737,7 @@ xhp_tag_open:
 
 xhp_tag_close:
   T_XHP_LT_DIV xhp_label_no_space '>' {
-    pop_state(); // XHP_CHILD_START
+    pop_state(); // ST_XHP_CHILD_START
     if (yyextra->peekTag() != $2.c_str()) {
       string e1 = $2.c_str();
       string e2 = yyextra->peekTag();
@@ -1751,15 +1751,15 @@ xhp_tag_close:
     }
     yyextra->popTag();
     if (yyextra->haveTag()) {
-      set_state(XHP_CHILD_START);
+      set_state(ST_XHP_CHILD_START);
     }
   }
 | T_XHP_LT_DIV_GT {
     // empty end tag -- SGML SHORTTAG
-    pop_state(); // XHP_CHILD_START
+    pop_state(); // ST_XHP_CHILD_START
     yyextra->popTag();
     if (yyextra->haveTag()) {
-      set_state(XHP_CHILD_START);
+      set_state(ST_XHP_CHILD_START);
     }
     $$ = "))";
   }
@@ -1788,15 +1788,15 @@ xhp_children:
     $$ = "";
   }
 | xhp_literal_text {
-    set_state(XHP_CHILD_START);
+    set_state(ST_XHP_CHILD_START);
     $$ = "'" + $1 + "',";
   }
 | xhp_children xhp_child {
-    set_state(XHP_CHILD_START);
+    set_state(ST_XHP_CHILD_START);
     $$ = $1 + $2 + ",";
   }
 | xhp_children xhp_child xhp_literal_text {
-    set_state(XHP_CHILD_START);
+    set_state(ST_XHP_CHILD_START);
     $$ = $1 + $2 + ",'" + $3 + "',";
   }
 ;
@@ -1804,13 +1804,13 @@ xhp_children:
 xhp_child:
   xhp_tag_expression
 | '{' {
-    push_state(PHP);
+    push_state(ST_PHP);
     yyextra->pushStack();
   } expr '}' {
     pop_state();
     yyextra->popStack();
   } {
-    set_state(XHP_CHILD_START);
+    set_state(ST_XHP_CHILD_START);
     $$ = $3;
   }
 ;
@@ -1819,7 +1819,7 @@ xhp_child:
 xhp_attributes:
   /* empty */ {
     $$ = "";
-    push_state(XHP_ATTRS);
+    push_state(ST_XHP_ATTRS);
   }
 | xhp_attributes xhp_attribute {
     $$ = $1 + $2 + ",";
@@ -1840,10 +1840,10 @@ xhp_attribute:
 ;
 
 xhp_attribute_value:
-  '"' { push_state(XHP_ATTR_VAL); } xhp_attribute_quoted_value '"' {
+  '"' { push_state(ST_XHP_ATTR_VAL); } xhp_attribute_quoted_value '"' {
     $$ = $3;
   }
-| '{' { push_state(PHP); } expr { pop_state(); } '}' {
+| '{' { push_state(ST_PHP); } expr { pop_state(); } '}' {
     $$ = $3;
   }
 ;
@@ -1860,28 +1860,28 @@ xhp_attribute_quoted_value:
 
 // Misc
 xhp_label_immediate:
-  { push_state(XHP_LABEL); } xhp_label_ xhp_whitespace_hack {
+  { push_state(ST_XHP_LABEL); } xhp_label_ xhp_whitespace_hack {
     pop_state();
     $$ = $2;
   }
 ;
 
 xhp_label_no_space:
-  { push_state(XHP_LABEL); } xhp_label_ {
+  { push_state(ST_XHP_LABEL); } xhp_label_ {
     pop_state();
     $$ = $2;
   }
 ;
 
 xhp_label_pass:
-  { push_state(XHP_LABEL_WHITESPACE); } xhp_label_pass_ xhp_whitespace_hack {
+  { push_state(ST_XHP_LABEL_WHITESPACE); } xhp_label_pass_ xhp_whitespace_hack {
     pop_state();
     $$ = $2;
   }
 ;
 
 xhp_label_pass_immediate:
-  { push_state(XHP_LABEL); } xhp_label_pass_ xhp_whitespace_hack {
+  { push_state(ST_XHP_LABEL); } xhp_label_pass_ xhp_whitespace_hack {
     pop_state();
     $$ = $2;
   }
@@ -1889,7 +1889,7 @@ xhp_label_pass_immediate:
 
 
 xhp_label:
-  { push_state(XHP_LABEL_WHITESPACE); } xhp_label_ xhp_whitespace_hack {
+  { push_state(ST_XHP_LABEL_WHITESPACE); } xhp_label_ xhp_whitespace_hack {
     pop_state();
     $$ = $2;
   }
@@ -1898,7 +1898,7 @@ xhp_label:
 xhp_label_:
   T_STRING {
     // XHP_LABEL is popped in the scanner on " ", ">", "/", or "="
-    push_state(XHP_LABEL);
+    push_state(ST_XHP_LABEL);
     $$ = $1;
   }
 | xhp_label_ T_XHP_COLON T_STRING {
@@ -1912,7 +1912,7 @@ xhp_label_:
 xhp_label_pass_:
   T_STRING {
     // XHP_LABEL is popped in the scanner on " ", ">", "/", or "="
-    push_state(XHP_LABEL);
+    push_state(ST_XHP_LABEL);
     $$ = $1;
   }
 | xhp_label_pass_ T_XHP_COLON T_STRING {
@@ -1958,7 +1958,7 @@ class_declaration_statement:
 
 // Element attribute declaration
 class_statement:
-  T_XHP_ATTRIBUTE { push_state(XHP_ATTR_TYPE_DECL); } xhp_attribute_decls ';' {
+  T_XHP_ATTRIBUTE { push_state(ST_XHP_ATTR_TYPE_DECL); } xhp_attribute_decls ';' {
     pop_state();
     yyextra->used = true;
     yyextra->used_attributes = true;
@@ -2007,7 +2007,7 @@ xhp_attribute_decl_type:
 | T_XHP_MIXED {
     $$ = "6, null";
   }
-| T_XHP_ENUM '{' { push_state(PHP); } xhp_attribute_enum { pop_state(); } '}' {
+| T_XHP_ENUM '{' { push_state(ST_PHP); } xhp_attribute_enum { pop_state(); } '}' {
     $$ = "7, array(" + $4 + ")";
   }
 | T_XHP_FLOAT {
@@ -2095,7 +2095,7 @@ xhp_attribute_is_required:
 
 // Element category declaration
 class_statement:
-  T_XHP_CATEGORY { push_state(PHP_NO_RESERVED_WORDS_PERSIST); } xhp_category_list ';' {
+  T_XHP_CATEGORY { push_state(ST_PHP_NO_RESERVED_WORDS_PERSIST); } xhp_category_list ';' {
     pop_state();
     yyextra->used = true;
     $$ =
@@ -2117,8 +2117,8 @@ xhp_category_list:
 
 // Element child list
 class_statement:
-  T_XHP_CHILDREN { push_state(XHP_CHILDREN_DECL); } xhp_children_decl ';' {
-    // XHP_CHILDREN_DECL is popped in the scanner on ';'
+  T_XHP_CHILDREN { push_state(ST_XHP_CHILDREN_DECL); } xhp_children_decl ';' {
+    // ST_XHP_CHILDREN_DECL is popped in the scanner on ';'
     yyextra->used = true;
     $$ = "protected function &__xhpChildrenDeclaration() {" + $3 + "}";
   }
@@ -2192,7 +2192,7 @@ xhp_children_decl_tag:
 class_name:
   T_XHP_COLON xhp_label_immediate {
     pop_state();
-    push_state(PHP);
+    push_state(ST_PHP);
     yyextra->used = true;
     $$ = (yyextra->force_global_namespace ? "\\xhp_" : "xhp_") + $2;
   }
@@ -2201,7 +2201,7 @@ class_name:
 fully_qualified_class_name:
   T_XHP_COLON xhp_label_immediate {
     pop_state();
-    push_state(PHP);
+    push_state(ST_PHP);
     yyextra->used = true;
     $$ = (yyextra->force_global_namespace ? "\\xhp_" : "xhp_") + $2;
   }
