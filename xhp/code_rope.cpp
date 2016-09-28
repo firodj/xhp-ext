@@ -111,3 +111,22 @@ code_rope operator+(const char* left, const code_rope& right) {
   ret.str += right.str;
   return ret;
 }
+
+void code_rope::replaceAll(const char *find, const char *rep) {
+  size_t j,i=this->str.length();
+  string s = this->str.c_str();
+  string f(find);
+  _rope_t r(rep);
+  while ((j = s.rfind(find, i)) != std::string::npos) {
+    this->str.replace(j, f.length(), r);
+    i=j-1;
+  }
+}
+
+void code_rope::xhpLabel(bool global_ns /* = true */) {
+  replaceAll(":", "__");
+  replaceAll("-", "_");
+
+  str.insert(0, "xhp_");
+  if (global_ns) str.insert(0, "\\");
+}

@@ -8,6 +8,8 @@ ifdef PROFILE
 CPPFLAGS += -pg
 endif
 
+FLEX = `which flex35 2>/dev/null || which flex 2>/dev/null`
+
 all: libxhp.a libxhp.so
 
 clean:
@@ -19,7 +21,7 @@ parser.yacc.cpp: parser.y
 parser.yacc.hpp: parser.yacc.cpp
 
 scanner.lex.cpp: scanner.l
-	`which flex35 2>/dev/null || which flex 2>/dev/null` \
+	$(FLEX) \
 	  -C --header-file=scanner.lex.hpp -o $@ -d $<
 
 scanner.lex.hpp: scanner.lex.cpp
@@ -41,6 +43,9 @@ libxhp.so: code_rope.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
 	g++ -shared -Wl,-soname,libxhp.so -o libxhp.so $^
 
 xhpize: xhpize.cpp libxhp.a
+	g++ $(CPPFLAGS) -o $@ $^
+
+rope_test: rope_test.cpp code_rope.o
 	g++ $(CPPFLAGS) -o $@ $^
 
 .PHONY: all clean tags

@@ -38,6 +38,9 @@ class code_rope {
     code_rope operator+(const char*) const;
     code_rope& operator=(const char*);
 
+    void replaceAll(const char *find, const char *rep);
+    void xhpLabel(bool global_ns = true);
+
   friend code_rope operator+(const char*, const code_rope&);
 };
 code_rope operator+(const char*, const code_rope&);

@@ -1940,7 +1940,7 @@ xhp_whitespace_hack:
 
 // Elements
 class_declaration_statement:
-  class_entry_type ':' xhp_label_immediate extends_from implements_list '{' {
+  class_entry_type T_XHP_LABEL extends_from implements_list '{' {
     yyextra->expecting_xhp_class_statements = true;
     yyextra->attribute_decls = "";
     yyextra->attribute_inherit = "";
@@ -1948,7 +1948,8 @@ class_declaration_statement:
   } class_statement_list {
     yyextra->expecting_xhp_class_statements = false;
   } '}' {
-    $$ = $1 + " xhp_" + $3 + $4 + $5 + $6 + $8;
+    $2.xhpLabel(false);
+    $$ = $1 + " " + $2 + $3 + $4 + $5 + $7;
     if (yyextra->used_attributes) {
       $$ = $$ +
         "protected static function &__xhpAttributeDeclaration() {" +
@@ -1961,15 +1962,14 @@ class_declaration_statement:
           "return $_;"
         "}";
     }
-    $$ = $$ + $10;
+    $$ = $$ + $9;
     yyextra->used = true;
   }
 ;
 
 // Element attribute declaration
 class_statement:
-  T_XHP_ATTRIBUTE { push_state(ST_XHP_ATTR_TYPE_DECL); } xhp_attribute_decls ';' {
-    pop_state();
+  T_XHP_ATTRIBUTE xhp_attribute_decls ';' {
     yyextra->used = true;
     yyextra->used_attributes = true;
     $$ = ""; // this will be injected when the class closes
@@ -1988,10 +1988,11 @@ xhp_attribute_decl:
     yyextra->attribute_decls = yyextra->attribute_decls +
       "'" + $2 + "'=>array(" + $1 + "," + $3 + ", " + $4 + "),";
   }
-| T_XHP_COLON xhp_label_immediate {
-    $2.strip_lines();
+| T_XHP_LABEL {
+    $1.strip_lines();
+    $1.xhpLabel(yyextra->force_global_namespace);
     yyextra->attribute_inherit = yyextra->attribute_inherit +
-      (yyextra->force_global_namespace ? "\\xhp_" : "xhp_") + $2 + "::__xhpAttributeDeclaration() + ";
+        $1 + "::__xhpAttributeDeclaration() + ";
   }
 ;
 
@@ -2017,8 +2018,8 @@ xhp_attribute_decl_type:
 | T_XHP_MIXED {
     $$ = "6, null";
   }
-| T_XHP_ENUM '{' { push_state(ST_PHP); } xhp_attribute_enum { pop_state(); } '}' {
-    $$ = "7, array(" + $4 + ")";
+| T_XHP_ENUM '{' xhp_attribute_enum '}' {
+    $$ = "7, array(" + $3 + ")";
   }
 | T_XHP_FLOAT {
     $$ = "8, null";
@@ -2200,20 +2201,16 @@ xhp_children_decl_tag:
 
 // Make XHP classes usable anywhere you see a real class
 class_name:
-  T_XHP_COLON xhp_label_immediate {
-    pop_state();
-    push_state(ST_PHP);
+  T_XHP_LABEL {
     yyextra->used = true;
-    $$ = (yyextra->force_global_namespace ? "\\xhp_" : "xhp_") + $2;
+    $1.xhpLabel(yyextra->force_global_namespace); $$ = $1;
   }
 ;
 
 fully_qualified_class_name:
-  T_XHP_COLON xhp_label_immediate {
-    pop_state();
-    push_state(ST_PHP);
+  T_XHP_LABEL {
     yyextra->used = true;
-    $$ = (yyextra->force_global_namespace ? "\\xhp_" : "xhp_") + $2;
+    $1.xhpLabel(yyextra->force_global_namespace); $$ = $1;
   }
 ;
 
