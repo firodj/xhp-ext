@@ -9,7 +9,20 @@ echo "Cool!";
 code
 );
 
-var_dump($tokens);
---EXPECT--
-array(0) {
+echo 'TOKENS:'. count($tokens) . PHP_EOL;
+foreach($tokens as $tok) {
+  if (is_array($tok)) {
+  echo xhp_token_name($tok[0]).' '.$tok[2];
+  } else {
+  var_export($tok);
+  }
+  echo PHP_EOL;
 }
+--EXPECT--
+TOKENS:6
+T_OPEN_TAG 2
+T_WHITESPACE 3
+T_ECHO 3
+T_WHITESPACE 3
+T_CONSTANT_ENCAPSED_STRING 3
+';'
