@@ -285,9 +285,44 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
 // tokenize
 static zend_bool tokenize(zval *return_value, zend_string *source)
 {
-  zval source_zval;
   array_init(return_value);
-  
+
+  char *val = ZSTR_VAL(source);
+  string in(val);
+
+  // Create a flex buffer
+  in.reserve(in.size() + 1);
+  char *buffer = const_cast<char*>(in.c_str());
+  buffer[in.size() + 1] = 0; // need double NULL for scan_buffer
+
+  // Parse the PHP
+  void *lex_state;
+  xhp_init_lexical_state(buffer, in.size()+2, &lex_state);
+  char *code_str;
+
+  int64_t tok;
+  size_t lineno;
+  while(tok = xhp_lex(code_str, lineno, lex_state)) {
+    string code_s(code_str);
+
+    if (tok >= 256) {
+        zval keyword;
+        array_init(&keyword);
+        add_next_index_long(&keyword, tok);
+        add_next_index_stringl(&keyword, code_s.c_str(), code_s.length());
+        add_next_index_long(&keyword, lineno);
+        add_next_index_zval(return_value, &keyword);
+    } else {
+        if (tok >= 0x20 && tok <= 0x7E) {
+            add_next_index_stringl(return_value, code_s.c_str(), code_s.length());
+        } else {
+            add_next_index_long(return_value, tok);
+        }
+    }
+  }
+
+  xhp_destroy_lexical_state(lex_state);
+
   return 1;
 }
 

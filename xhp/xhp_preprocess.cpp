@@ -115,7 +115,7 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
   size_t lineno, oldlineno=0;
 
   int64_t tok;
-  while(tok = xhp_lex(code_str, lineno, lex_state)) {
+  while ((tok = xhp_lex(code_str, lineno, lex_state))) {
     stringstream ss;
 
     if (oldlineno != lineno) {
