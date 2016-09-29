@@ -112,6 +112,11 @@ code_rope operator+(const char* left, const code_rope& right) {
   return ret;
 }
 
+bool code_rope::operator==(const char* right)
+{
+  return str == _rope_t(right);
+}
+
 void code_rope::replaceAll(const char *find, const char *rep) {
   size_t j,i=this->str.length();
   string s = this->str.c_str();

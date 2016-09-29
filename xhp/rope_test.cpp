@@ -13,6 +13,8 @@ int main(int argc, char* argv[])
 
     cout << "rope = " << rope.c_str() << endl;
 
+    cout << "test = " << (rope == "\\xhp_x__element_something__wrong") << endl;
+
     cout << endl;
     return 0;
 }
