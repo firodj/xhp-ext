@@ -277,14 +277,19 @@ XHPLABEL {LABEL}([:-]{LABEL})*
   "callable" tok(T_XHP_CALLABLE);
   "var"      tok(T_VAR);
   "mixed"    tok(T_XHP_MIXED);
-  "array"    tok(T_XHP_ARRAY);
+  "array"    tok(T_ARRAY);
   "string"   tok(T_XHP_STRING);
   "("        tok('(');
   ":"        tok(T_XHP_COLON);
   ">>" {
     yyless(1);
-    tok('>');
+    tok(T_TYPELIST_GT);
   }
+  ">" tok(T_TYPELIST_GT);
+  "<" tok(T_TYPELIST_LT);
+  ";" { pop_state(); tok(';'); }
+  "enum"     tok(T_XHP_ENUM);
+  "@required"  tok(T_XHP_REQUIRED);
 }
 
  /* Open / close PHP + inline HTML */
@@ -363,7 +368,7 @@ XHPLABEL {LABEL}([:-]{LABEL})*
     push_state(ST_PHP_COMMENT);
     yymore();
   }
-  {WHITESPACE}+ yy_scan_newlines(yytext, yyg);
+  {WHITESPACE}+ { yy_scan_newlines(yytext, yyg); }
 }
 <ST_PHP_EOL_COMMENT>{
   {NEWLINE} {
@@ -472,7 +477,8 @@ XHPLABEL {LABEL}([:-]{LABEL})*
     // This means the lexer and parser are interdependent.
     //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
     //    (yyextra->expecting_xhp_class_statements)) {
-      tok(T_XHP_ATTRIBUTE);
+    push_state(ST_XHP_ATTR_TYPE_DECL);
+    tok(T_XHP_ATTRIBUTE);
     //} else {
     //  tok(T_STRING);
     //}
@@ -493,8 +499,6 @@ XHPLABEL {LABEL}([:-]{LABEL})*
     //  tok(T_STRING);
     //}
   }
-  "enum"     tok(T_XHP_ENUM);
-  "@required"  tok(T_XHP_REQUIRED);
 }
 
  /* Operators */
@@ -527,38 +531,14 @@ XHPLABEL {LABEL}([:-]{LABEL})*
   "::" tok(T_PAAMAYIM_NEKUDOTAYIM);
   "\\" tok(T_NS_SEPARATOR);
   "??" tok(T_COALESCE);
-  ":" {
-    // A colon can either mean the start (or component) of an XHP class,
-    // a ternary expression (as in 1?false:null), the colon of a 'case', 
-    // or finally the start of a block in the old PHP syntax. The following
-    // disambiguate between the XHP case, which requires a special token,
-    // and the other cases.
-    switch (yyextra->last_token) {
-      // In a ternary expression, the colon must follow a full-fledged
-      // expression so seeing for instance a binary operator means
-      // it must be an XHP class.
-      case ',': case '=': case '|': case '^': case '&': case '<': case '>':
-      case '+': case '-': case '%': case '!': case '~': case '[': case '(':
-      case '{': case '.': case ':':
-      case T_LOGICAL_OR: case T_LOGICAL_XOR: case T_LOGICAL_AND:
-      case T_PLUS_EQUAL: case T_MINUS_EQUAL: case T_MUL_EQUAL:
-      case T_DIV_EQUAL: case T_CONCAT_EQUAL: case T_MOD_EQUAL:
-      case T_AND_EQUAL: case T_OR_EQUAL: case T_XOR_EQUAL:
-      case T_SL_EQUAL: case T_SR_EQUAL: case T_BOOLEAN_OR:
-      case T_BOOLEAN_AND: case T_IS_EQUAL: case T_IS_NOT_EQUAL:
-      case T_IS_IDENTICAL: case T_IS_NOT_IDENTICAL: case T_IS_SMALLER_OR_EQUAL:
-      case T_IS_GREATER_OR_EQUAL:
-      // An XHP class can also occur after certain keywords. Not sure
-      // we got them all covered though.
-      case T_ECHO: case T_RETURN:
-      case T_EXTENDS: case T_INSTANCEOF: case T_DOUBLE_ARROW:
-      case T_XHP_ATTRIBUTE: case T_IMPLEMENTS:
-        tok(T_XHP_COLON);
-        break;
-      default:
-        tok(':');
-        break;
+  ":"{XHPLABEL}  {
+    int ntt = getNextTokenType(yyextra->last_token);
+    if (ntt & NextTokenType::XhpClassName) {
+      yytext++; yyleng--; // skipping the first colon
+      tok(T_XHP_LABEL);
     }
+    yyless(1);
+    tok(':');
   }
 }
 

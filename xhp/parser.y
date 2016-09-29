@@ -203,7 +203,6 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_XHP_HYPHEN
 %token T_XHP_BOOLEAN
 %token T_XHP_NUMBER
-%token T_XHP_ARRAY
 %token T_XHP_MIXED
 %token T_XHP_STRING
 %token T_XHP_ENUM
@@ -211,6 +210,11 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_XHP_CALLABLE
 %token T_XHP_REQUIRED
 %token T_XHP_LABEL
+
+%token T_XHP_TAG_LT
+%token T_XHP_TAG_GT
+%token T_TYPELIST_LT
+%token T_TYPELIST_GT
 %token T_UNRESOLVED_OP
 %token T_UNRESOLVED_LT
 
@@ -280,6 +284,15 @@ use_declaration:
 | T_NS_SEPARATOR namespace_name T_AS T_STRING {
     $$ = $1 + $2 + " " + $3 + " " + $4;
   }
+;
+
+ident_no_semireserved:
+    T_STRING
+  | T_XHP_ATTRIBUTE
+  | T_XHP_CATEGORY
+  | T_XHP_CHILDREN
+  | T_XHP_REQUIRED
+  | T_XHP_ENUM
 ;
 
 constant_declaration:
@@ -1701,6 +1714,91 @@ class_constant:
 
 //
 // XHP Extensions
+xhp_label_ws:
+    xhp_bareword                       { $$ = $1;}
+  | xhp_label_ws ':'
+    xhp_bareword                       { $$ = $1 + ":" + $3;}
+  | xhp_label_ws '-'
+    xhp_bareword                       { $$ = $1 + "-" + $3;}
+;
+
+xhp_bareword:
+    ident_no_semireserved
+  | T_EXIT
+  | T_FUNCTION
+  | T_CONST
+  | T_RETURN
+  | T_YIELD
+  | T_YIELD_FROM
+  | T_TRY
+  | T_CATCH
+  | T_FINALLY
+  | T_THROW
+  | T_IF
+  | T_ELSEIF
+  | T_ENDIF
+  | T_ELSE
+  | T_WHILE
+  | T_ENDWHILE
+  | T_DO
+  | T_FOR
+  | T_ENDFOR
+  | T_FOREACH
+  | T_ENDFOREACH
+  | T_DECLARE
+  | T_ENDDECLARE
+  | T_INSTANCEOF
+  | T_AS
+  | T_SWITCH
+  | T_ENDSWITCH
+  | T_CASE
+  | T_DEFAULT
+  | T_BREAK
+  | T_CONTINUE
+  | T_GOTO
+  | T_ECHO
+  | T_PRINT
+  | T_CLASS
+  | T_INTERFACE
+  | T_EXTENDS
+  | T_IMPLEMENTS
+  | T_NEW
+  | T_CLONE
+  | T_VAR
+  | T_EVAL
+  | T_INCLUDE
+  | T_INCLUDE_ONCE
+  | T_REQUIRE
+  | T_REQUIRE_ONCE
+  | T_NAMESPACE
+  | T_USE
+  | T_GLOBAL
+  | T_ISSET
+  | T_EMPTY
+  | T_HALT_COMPILER
+  | T_STATIC
+  | T_ABSTRACT
+  | T_FINAL
+  | T_PRIVATE
+  | T_PROTECTED
+  | T_PUBLIC
+  | T_UNSET
+  | T_LIST
+  | T_ARRAY
+  | T_LOGICAL_OR
+  | T_LOGICAL_AND
+  | T_LOGICAL_XOR
+  | T_CLASS_C
+  | T_FUNC_C
+  | T_METHOD_C
+  | T_LINE
+  | T_FILE
+  | T_DIR
+  | T_NS_C
+  | T_TRAIT
+  | T_TRAIT_C
+  | T_INSTEADOF
+;
 
 // Tags
 expr_without_variable:
@@ -1982,7 +2080,7 @@ xhp_attribute_decls:
 ;
 
 xhp_attribute_decl:
-  xhp_attribute_decl_type xhp_label_pass xhp_attribute_default xhp_attribute_is_required {
+  xhp_attribute_decl_type xhp_label_ws xhp_attribute_default xhp_attribute_is_required {
     $1.strip_lines();
     $2.strip_lines();
     yyextra->attribute_decls = yyextra->attribute_decls +
@@ -2006,7 +2104,7 @@ xhp_attribute_decl_type:
 | T_XHP_NUMBER {
     $$ = "3, null";
   }
-| T_XHP_ARRAY xhp_attribute_array_type {
+| T_ARRAY xhp_attribute_array_type {
     $$ = "4, " + $2;
   }
 | class_name {
@@ -2030,10 +2128,10 @@ xhp_attribute_decl_type:
 ;
 
 xhp_attribute_array_type:
-  '<' xhp_attribute_array_key_type ',' xhp_attribute_array_value_type '>' {
+  T_TYPELIST_LT xhp_attribute_array_key_type ',' xhp_attribute_array_value_type T_TYPELIST_GT {
     $$ = "array(" + $2 + "," + $4 + ")";
   }
-| '<' xhp_attribute_array_value_type '>' {
+| T_TYPELIST_LT xhp_attribute_array_value_type T_TYPELIST_GT {
     $$ = "array(null," + $2 + ")";
   }
 | /* empty */ {
@@ -2060,7 +2158,7 @@ xhp_attribute_array_value_type:
 | T_XHP_NUMBER {
     $$ = "3";
   }
-| T_XHP_ARRAY xhp_attribute_array_type {
+| T_ARRAY xhp_attribute_array_type {
     $$ = "4," + $2;
   }
 | class_name {
