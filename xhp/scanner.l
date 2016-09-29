@@ -194,6 +194,7 @@ static int getNextTokenType(int t) {
     case T_PUBLIC:
     case T_STATIC:
       return NextTokenType::XhpClassName;
+    case T_OBJECT_OPERATOR:
     case T_STRING:
     case T_XHP_CHILDREN:
     case T_XHP_REQUIRED:

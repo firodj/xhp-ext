@@ -1936,8 +1936,8 @@ xhp_attributes:
 
 // Attribute when referenced as an object property ($foo->:attr)
 xhp_attribute_reference:
-  ':' xhp_label_pass {
-    $$ = "getAttribute('" + $2 + "')";
+  T_XHP_LABEL {
+    $$ = "getAttribute('" + $1 + "')";
   }
 ;
 
