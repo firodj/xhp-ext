@@ -329,37 +329,15 @@ XHPLABEL {LABEL}([:-]{LABEL})*
       tok(T_INLINE_HTML);
     }
   }
-  "<%" {
-    if (yyextra->asp_tags) {
-      tok(T_OPEN_TAG);
-    } else {
-      tok(T_INLINE_HTML);
-    }
-  }
-  "<%=" {
-    if (yyextra->asp_tags) {
-      tok(T_OPEN_TAG_WITH_ECHO);
-    } else {
-      tok(T_INLINE_HTML);
-    }
-  }
   "<"|[^<]* {
     yy_scan_newlines(yytext, yyg);
     tok(T_INLINE_HTML);
   }
 }
 <ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST>{
-  ("?>"|"</script"{WHITESPACE}*">"){NEWLINE}? {
+  "?>"{NEWLINE}? {
     yy_scan_newlines(yytext + 2, yyg);
     tok(T_CLOSE_TAG);
-  }
-  "%>" {
-    if (yyextra->asp_tags) {
-      tok(T_CLOSE_TAG);
-    } else {
-      yyless(1);
-      tok(yytext[0]);
-    }
   }
 }
 
