@@ -145,7 +145,15 @@ struct xhp_lex_state_t
 {
 public:
   xhp_lex_state_t() {
-    this->scanner = 0;
+    scanner = 0;
+    xhplex_init(&scanner);
+  }
+  ~xhp_lex_state_t() {
+    xhplex_destroy(scanner);
+  }
+  void scan_buffer(char *buffer, size_t size) {
+    xhpset_extra(&extra, scanner);
+    xhp_scan_buffer(buffer, size, scanner);
   }
 
   void *scanner;
@@ -174,9 +182,8 @@ xhp_init_lexical_state(char *buffer, size_t size, void **lex_state)
 {
   xhp_lex_state_t *l = new xhp_lex_state_t();
 
-  xhplex_init(&l->scanner);
-  xhpset_extra(&l->extra, l->scanner);
-  xhp_scan_buffer(buffer, size, l->scanner);
+  l->extra.return_all_tokens = true;
+  l->scan_buffer(buffer, size);
 
   *lex_state = l;
 }
@@ -186,7 +193,6 @@ xhp_destroy_lexical_state(void *lex_state)
 {
     xhp_lex_state_t *l = static_cast<xhp_lex_state_t*>(lex_state);
     if (l) {
-       xhplex_destroy(l->scanner);
        delete l;
     }
 }

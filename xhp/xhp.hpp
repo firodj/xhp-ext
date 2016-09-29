@@ -36,6 +36,7 @@ class yy_extra_type {
       force_global_namespace = false;
       expecting_xhp_class_statements = false;
       hh_tags = false;
+      return_all_tokens = false;
       pushStack();
     }
 
@@ -63,6 +64,7 @@ class yy_extra_type {
     code_rope attribute_decls; // array keys and values for __xhpAttributeDescription
     code_rope attribute_inherit; // from which classes this class should inherit attributes
     bool hh_tags;
+    bool return_all_tokens;
 
     /* Utility functions for checking proper tag closing */
     bool haveTag() {

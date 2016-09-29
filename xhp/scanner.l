@@ -40,13 +40,9 @@
     yyextra->first_lineno = yyextra->lineno;
 
 #define tok(t) \
-  if (yyextra->has_doc_block) { \
-    *yylval = yyextra->doc_block + code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno); \
-    yyextra->has_doc_block = false; \
-  } else { \
-    *yylval = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno); \
-  } \
-  return yy_token(t, yyg)
+  *yylval = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno); \
+  if (shouldReturnToken(t, yyextra->return_all_tokens)) \
+    return yy_token(t, yyg)
 
 #ifdef DEBUG
   static void yy_log_token(int tok);
@@ -209,6 +205,19 @@ static int getNextTokenType(int t) {
   }
 }
 
+static bool shouldReturnToken(int t, bool force)
+{
+    if (!force) {
+        switch (t) {
+          case T_DOC_COMMENT:
+          case T_COMMENT:
+          case T_WHITESPACE:
+            return false;
+        }
+    }
+    return true;
+}
+
 %}
 
  /* The different lexing states. Note that the transitions are done either
@@ -369,17 +378,19 @@ XHPLABEL {LABEL}([:-]{LABEL})*
     push_state(ST_PHP_COMMENT);
     yymore();
   }
-  {WHITESPACE}+ { yy_scan_newlines(yytext, yyg); }
+  {WHITESPACE}+ { yy_scan_newlines(yytext, yyg); tok(T_WHITESPACE); }
 }
 <ST_PHP_EOL_COMMENT>{
   {NEWLINE} {
     ++yyextra->lineno;
     pop_state();
+    tok(T_COMMENT);
   }
   [^\r\n?]+ yymore();
   "?>" {
     yyless(yyleng - 2);
     pop_state();
+    tok(T_COMMENT);
   }
   . yymore();
 }
@@ -391,11 +402,15 @@ XHPLABEL {LABEL}([:-]{LABEL})*
   [^*\r\n]+|"*" yymore();
 }
 <ST_PHP_DOC_COMMENT>"*/" {
-  yyextra->doc_block = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno);
-  yyextra->has_doc_block = true;
+  //yyextra->doc_block = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno);
+  //yyextra->has_doc_block = true;
   pop_state();
+  tok(T_DOC_COMMENT);
 }
-<ST_PHP_COMMENT>"*/" pop_state();
+<ST_PHP_COMMENT>"*/" {
+  pop_state();
+  tok(T_COMMENT);
+}
 
  /* Reserved words */
 <ST_PHP>{
@@ -637,16 +652,6 @@ XHPLABEL {LABEL}([:-]{LABEL})*
 }
 
  /* XHP */
-<ST_PHP>":"{XHPLABEL}  {
-  int ntt = getNextTokenType(yyextra->last_token);
-  if (ntt & NextTokenType::XhpClassName) {
-    yytext++; yyleng--; // skipping the first colon
-    tok(T_XHP_LABEL);
-  }
-  yyless(1);
-  tok(':');
-}
-
 <ST_XHP_LABEL_WHITESPACE>{
   {WHITESPACE}+ yy_scan_newlines(yytext, yyg);
 }
@@ -1220,7 +1225,8 @@ static int yy_token(int tok, yyguts_t* yyg) {
 #ifdef DEBUG
   yy_log_token(tok);
 #endif
-  return yyextra->last_token = tok;
+  if (shouldReturnToken(tok, false)) yyextra->last_token = tok;
+  return tok;
 }
 
 static inline void yy_scan_newlines(const char* text, struct yyguts_t* yyg) {
