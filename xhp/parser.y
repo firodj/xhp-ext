@@ -35,9 +35,16 @@
 #undef yylineno
 #define yylineno yyextra->first_lineno
 #define cr(s) code_rope(s, yylineno)
+#if 0
 #define push_state(s) xhp_new_push_state(s, (struct yyguts_t*) yyscanner)
 #define pop_state() xhp_new_pop_state((struct yyguts_t*) yyscanner)
 #define set_state(s) xhp_set_state(s, (struct yyguts_t*) yyscanner)
+#else
+#define push_state(s)
+#define pop_state()
+#define set_state(s)
+#endif
+
 using namespace std;
 
 static void yyerror(void* yyscanner, void* _, const char* error) {
@@ -1822,7 +1829,7 @@ xhp_tag_expression:
 ;
 
 xhp_singleton:
-  xhp_tag_start xhp_attributes '/' '>' {
+  xhp_tag_start xhp_attributes '/' T_XHP_TAG_GT {
     pop_state(); // ST_XHP_ATTRS
     if (yyextra->include_debug) {
       char line[16];
@@ -1835,7 +1842,7 @@ xhp_singleton:
 ;
 
 xhp_tag_open:
-  xhp_tag_start xhp_attributes '>' {
+  xhp_tag_start xhp_attributes T_XHP_TAG_GT {
     pop_state(); // ST_XHP_ATTRS
     push_state(ST_XHP_CHILD_START);
     yyextra->pushTag($1.c_str());
@@ -1844,7 +1851,7 @@ xhp_tag_open:
 ;
 
 xhp_tag_close:
-  T_XHP_LT_DIV xhp_label_no_space '>' {
+  T_XHP_LT_DIV xhp_label_no_space T_XHP_TAG_GT {
     pop_state(); // ST_XHP_CHILD_START
     if (yyextra->peekTag() != $2.c_str()) {
       string e1 = $2.c_str();
@@ -1874,7 +1881,7 @@ xhp_tag_close:
 ;
 
 xhp_tag_start:
-  '<' xhp_label_immediate {
+  T_XHP_TAG_LT xhp_label_immediate {
     $$ = $2;
   }
 ;
@@ -1968,7 +1975,11 @@ xhp_attribute_quoted_value:
 
 // Misc
 xhp_label_immediate:
-  { push_state(ST_XHP_LABEL); } xhp_label_ xhp_whitespace_hack {
+  T_XHP_LABEL {
+    $1.xhpLabel();
+    $$ = $1;
+  }
+| { push_state(ST_XHP_LABEL); } xhp_label_ xhp_whitespace_hack {
     pop_state();
     $$ = $2;
   }

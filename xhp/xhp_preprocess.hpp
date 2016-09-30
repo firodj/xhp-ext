@@ -50,5 +50,5 @@ XHPResult xhp_tokenize(std::string &in, std::string &out);
 
 const char * xhp_get_token_type_name(int64_t tok);
 int64_t xhp_lex(char* &code_str, size_t &lineno, void *lex_state);
-void xhp_init_lexical_state(char *buffer, size_t size, void **lex_state);
+void xhp_init_lexical_state(char *buffer, size_t size, void **lex_state, bool all_tokens=true);
 void xhp_destroy_lexical_state(void *lex_state);
