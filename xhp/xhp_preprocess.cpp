@@ -120,17 +120,18 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
 
     if (oldlineno != lineno) {
         oldlineno = lineno;
-        ss << lineno << ":";
+        ss << endl << lineno << ": ";
     }
 
-    if (tok < 255) {
-        ss << "(" << tok << ")";
-        if (tok >= 20 && tok <= 126) {
-            ss << char(tok);
-        }
-    } else {
+    if (tok >= 256) {
         ss << "[" << yytokname(tok) << "]";
         ss << code_str;
+    } else {
+        if (tok >= 20 && tok <= 126) {
+            ss << "(" << char(tok) << ")";
+        } else {
+            ss << tok;
+        }
     }
     out += ss.str();
   }

@@ -105,12 +105,6 @@ static bool utf8ize(uint32_t v, char* buf /* [5] */) {
  *     ":"{XHPLABEL} will be treated as an XHP class name
  *   XhpCategoryName:
  *     "%"{XHPLABEL} will be treated as an XHP category name
- *   TypeListMaybe:
- *     "<" should be recognized as possibly being the start of a type list;
- *     this will be resolved by inspecting subsequent tokens
- *   LambdaMaybe:
- *     "(" should be recognized as possibly being the start of a lambda
- *     expression; this will be resolved by inspecting subsequent tokens
  */
 namespace NextTokenType {
   static const int Normal = 0x1;
@@ -232,6 +226,7 @@ static bool shouldReturnToken(int t, bool force)
 %x ST_PHP_HEREDOC_DATA
 %x ST_PHP_NO_RESERVED_WORDS
 %x ST_PHP_NO_RESERVED_WORDS_PERSIST
+%x ST_XHP_IN_TAG
 %x ST_XHP_LABEL
 %x ST_XHP_LABEL_WHITESPACE
 %x ST_XHP_ATTRS
@@ -243,6 +238,10 @@ static bool shouldReturnToken(int t, bool force)
 %x ST_XHP_ATTR_TYPE_DECL
 %x ST_XHP_CHILDREN_DECL
 %x ST_XHP_COMMENT
+%x ST_XHP_END_SINGLETON_TAG
+%x ST_LT_CHECK
+%x ST_LOOKING_FOR_COLON
+%x ST_XHP_END_CLOSE_TAG
 
 %option prefix="xhp"
 %option reentrant
@@ -277,6 +276,8 @@ TOKENS [;:,.\[\])|^&+\-*/=%!~$<>?@]
 TABS_AND_SPACES [ \t]*
 NEWLINE ("\r\n"|"\n"|"\r")
 XHPLABEL {LABEL}([:-]{LABEL})*
+COMMENT_REGEX ("/*"([^\*]|("*"[^/]))*"*/"|("//"|"#")[^\r\n]*{NEWLINE})
+WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 
 %%
 
@@ -342,7 +343,7 @@ XHPLABEL {LABEL}([:-]{LABEL})*
 }
 
  /* Comments and whitespace */
-<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_CHILDREN_DECL,ST_XHP_ATTR_TYPE_DECL>{
+<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_CHILDREN_DECL,ST_XHP_ATTR_TYPE_DECL,ST_XHP_IN_TAG>{
   "#"|"//" {
     push_state(ST_PHP_EOL_COMMENT);
     yymore();
@@ -549,10 +550,14 @@ XHPLABEL {LABEL}([:-]{LABEL})*
   "("{TABS_AND_SPACES}unset{TABS_AND_SPACES}")" tok(T_UNSET_CAST);
 }
 
- /* Scalars (parsing these doesn't really matter since we just pass them through literally) */
-<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL>{
+ /* Numbers */
+<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL,ST_XHP_IN_TAG>{
   {LNUM}|{HNUM} tok(T_LNUMBER);
   {DNUM}|{EXPONENT_DNUM} tok(T_DNUMBER);
+}
+
+ /* Scalars (parsing these doesn't really matter since we just pass them through literally) */
+<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL>{
   {LABEL} tok(T_STRING);
   "$"{LABEL} tok(T_VARIABLE);
   b?'(\\.|\\\n|[^\\']+)*'|b?\"(\\.|\\\n|[^\\\"]+)*\" {
@@ -563,6 +568,73 @@ XHPLABEL {LABEL}([:-]{LABEL})*
     yy_scan_newlines(yytext, yyg);
     tok(T_BACKTICKS_EXPR);
   }
+}
+
+<ST_PHP>{TOKENS}   tok(yytext[0]);
+<ST_PHP>"{" {
+  push_state(ST_PHP);
+  tok('{');
+}
+
+<ST_PHP>"}"/":"[a-zA-Z_\x7f-\xff] {
+  // We need to be robust against a '}' in PHP code with
+  // no corresponding '{'
+  //struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+  if (yyg->yy_start_stack_ptr) {
+    pop_state();
+    if (YY_START == ST_PHP) {
+      /* If XHP is enabled and "}:" occurs (and "}" does not cause us
+         to transition to some state other than ST_IN_SCRIPTING), drop
+         into the ST_LOOKING_FOR_COLON state to avoid potentially
+         treating ":" as the beginning of an XHP class name */
+      BEGIN(ST_LOOKING_FOR_COLON);
+    }
+  }
+  tok('}');
+}
+<ST_PHP>"}" {
+  // We need to be robust against a '}' in PHP code with
+  // no corresponding '{'
+  //struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+  if (yyg->yy_start_stack_ptr) pop_state();
+  tok('}');
+}
+<ST_LOOKING_FOR_COLON>":" {
+  BEGIN(ST_PHP);
+  tok(':');
+}
+
+ /* XHP */
+<ST_PHP>"<"[a-zA-Z_\x7f-\xff] {
+  int ntt = getNextTokenType(yyextra->last_token);
+
+  if (ntt & NextTokenType::XhpTag) {
+    yyless(1);
+    push_state(ST_XHP_IN_TAG);
+    tok(T_XHP_TAG_LT);
+  }
+
+  if (ntt & NextTokenType::XhpTagMaybe) {
+    // Shift to state state ST_LT_CHECK to do a more extensive check to
+    // determine if this is the beginning of an XHP tag.
+    yyless(0);
+    BEGIN(ST_LT_CHECK);
+    break;
+  }
+
+  yyless(1);
+  tok('<');
+}
+
+<ST_LT_CHECK>"<"{XHPLABEL}(">"|"/>"|{WHITESPACE_AND_COMMENTS}(">"|"/>"|[a-zA-Z_\x7f-\xff])) {
+  BEGIN(ST_PHP);
+  yyless(1);
+  push_state(ST_XHP_IN_TAG);
+  tok(T_XHP_TAG_LT);
+}
+<ST_LT_CHECK>"<" {
+  BEGIN(ST_PHP);
+  tok('<');
 }
 
  /* (HERE|NOW)DOC's */
@@ -629,7 +701,44 @@ XHPLABEL {LABEL}([:-]{LABEL})*
   }
 }
 
+
  /* XHP */
+<ST_XHP_IN_TAG>{XHPLABEL} {
+   tok(T_XHP_LABEL);
+}
+<ST_XHP_IN_TAG>"=" {
+  tok(yytext[0]);
+}
+<ST_XHP_IN_TAG>["][^"]*["] {
+  tok(T_XHP_TEXT);
+}
+<ST_XHP_IN_TAG>[{] {
+  push_state(ST_PHP);
+  tok('{');
+}
+<ST_XHP_IN_TAG>">" {
+  BEGIN(ST_XHP_CHILD);
+  tok(T_XHP_TAG_GT);
+}
+<ST_XHP_IN_TAG>"/>" {
+  BEGIN(ST_XHP_END_SINGLETON_TAG);
+  yyless(1);
+  tok('/');
+}
+<ST_XHP_IN_TAG>{ANY_CHAR} {
+  // This rule ensures we get a reasonable syntax error message
+  // when unexpected characters occur inside XHP tags
+  if (!yyextra->terminated) {
+    yyextra->error = string("Invalid entity: (") + yytext + ")";
+    yyextra->terminated = true;
+  }
+  tok(yytext[0]);
+}
+<ST_XHP_END_SINGLETON_TAG>">" {
+  pop_state();
+  tok(T_XHP_TAG_GT);
+}
+
 <ST_XHP_LABEL_WHITESPACE>{
   {WHITESPACE}+ yy_scan_newlines(yytext, yyg);
 }
@@ -1051,21 +1160,25 @@ XHPLABEL {LABEL}([:-]{LABEL})*
     tok(T_XHP_TEXT);
   }
   {WHITESPACE}*"{" {
-    yy_scan_newlines(yytext, yyg);
+    push_state(ST_PHP);
     tok('{');
   }
   {WHITESPACE}*"<" {
     yy_scan_newlines(yytext, yyg);
-    tok('<');
+    push_state(ST_XHP_IN_TAG);
+    tok(T_XHP_TAG_LT);
   }
   {WHITESPACE}*"</" {
-    yy_scan_newlines(yytext, yyg);
-    tok(T_XHP_LT_DIV);
+    BEGIN(ST_XHP_END_CLOSE_TAG);
+    yyless(1);
+    tok(T_XHP_TAG_LT);
   }
-  {WHITESPACE}*"</>" {
-    yy_scan_newlines(yytext, yyg);
-    tok(T_XHP_LT_DIV_GT);
-  }
+}
+
+<ST_XHP_END_CLOSE_TAG>{
+  "/" tok('/');
+  {XHPLABEL} tok(T_XHP_LABEL);
+  ">" { pop_state(); tok(T_XHP_TAG_GT); }
 }
 
 <ST_XHP_CHILD>[ \n\r\t]*"<!--" {
