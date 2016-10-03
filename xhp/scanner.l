@@ -474,32 +474,27 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   __namespace__ tok(T_NS_C);
   __dir__ tok(T_DIR);
   attribute {
-    // expecting_xhp_class_statements is set in some actions in the grammar.
-    // This means the lexer and parser are interdependent.
-    //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
-    //    (yyextra->expecting_xhp_class_statements)) {
-    push_state(ST_XHP_ATTR_TYPE_DECL);
-    tok(T_XHP_ATTRIBUTE);
-    //} else {
-    //  tok(T_STRING);
-    //}
+    if ((last_token() == '{' || last_token() == '}' || last_token() == ';')) {
+      push_state(ST_XHP_ATTR_TYPE_DECL);
+      tok(T_XHP_ATTRIBUTE);
+    } else {
+      tok(T_STRING);
+    }
   }
   category {
-    //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
-    //    (yyextra->expecting_xhp_class_statements)) {
+    if ((last_token() == '{' || last_token() == '}' || last_token() == ';')) {
       tok(T_XHP_CATEGORY);
-    //} else {
-    //  tok(T_STRING);
-    //}
+    } else {
+      tok(T_STRING);
+    }
   }
   children {
-    //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
-    //    (yyextra->expecting_xhp_class_statements)) {
-    push_state(ST_XHP_CHILDREN_DECL);
-    tok(T_XHP_CHILDREN);
-    //} else {
-    //  tok(T_STRING);
-    //}
+    if ((last_token() == '{' || last_token() == '}' || last_token() == ';')) {
+      push_state(ST_XHP_CHILDREN_DECL);
+      tok(T_XHP_CHILDREN);
+    } else {
+      tok(T_STRING);
+    }
   }
 }
 
