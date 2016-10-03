@@ -231,6 +231,7 @@ static bool shouldReturnToken(int t, bool force)
 %x ST_XHP_CHILD
 %x ST_XHP_INVALID_ENTITY
 %x ST_XHP_ATTR_TYPE_DECL
+%x ST_XHP_CHILDREN_DECL
 %x ST_XHP_COMMENT
 %x ST_XHP_END_SINGLETON_TAG
 %x ST_LT_CHECK
@@ -297,6 +298,17 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   "@required"  tok(T_XHP_REQUIRED);
 }
 
+<ST_XHP_CHILDREN_DECL>{
+  any tok(T_XHP_ANY);
+  pcdata tok(T_XHP_PCDATA);
+  empty tok(T_EMPTY);
+  {LABEL} tok(T_STRING);
+  ";" {
+    pop_state();
+    tok(';');
+  }
+}
+
  /* Open / close PHP + inline HTML */
 <INITIAL>{
   "<?php"([ \t]|{NEWLINE}) {
@@ -337,7 +349,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 }
 
  /* Comments and whitespace */
-<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL,ST_XHP_IN_TAG>{
+<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_CHILDREN_DECL,ST_XHP_ATTR_TYPE_DECL,ST_XHP_IN_TAG>{
   "#"|"//" {
     push_state(ST_PHP_EOL_COMMENT);
     yymore();
@@ -483,7 +495,8 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   children {
     //if ((last_token() == '{' || last_token() == '}' || last_token() == ';') &&
     //    (yyextra->expecting_xhp_class_statements)) {
-      tok(T_XHP_CHILDREN);
+    push_state(ST_XHP_CHILDREN_DECL);
+    tok(T_XHP_CHILDREN);
     //} else {
     //  tok(T_STRING);
     //}
@@ -491,7 +504,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 }
 
  /* Operators */
-<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL>{
+<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL,ST_XHP_CHILDREN_DECL>{
   "+=" tok(T_PLUS_EQUAL);
   "-=" tok(T_MINUS_EQUAL);
   "*=" tok(T_MUL_EQUAL);
@@ -1173,6 +1186,8 @@ static const char* yy_state_name(int state) {
       return "ST_XHP_INVALID_ENTITY";
     case ST_XHP_ATTR_TYPE_DECL:
       return "ST_XHP_ATTR_TYPE_DECL";
+    case XHP_CHILDREN_DECL:
+      return "XHP_CHILDREN_DECL";
     case ST_XHP_COMMENT:
       return "ST_XHP_COMMENT";
     default:

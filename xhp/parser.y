@@ -194,7 +194,6 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_XHP_CATEGORY_LABEL
 %token T_XHP_CHILDREN
 %token T_XHP_ANY
-%token T_XHP_EMPTY
 %token T_XHP_PCDATA
 %token T_XHP_COLON
 %token T_XHP_HYPHEN
@@ -2144,7 +2143,7 @@ xhp_children_decl:
 | T_XHP_ANY {
     $$ = "static $_ = 1; return $_;";
   }
-| T_XHP_EMPTY {
+| T_EMPTY {
     $$ = "static $_ = 0; return $_;";
   }
 ;
