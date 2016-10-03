@@ -1226,6 +1226,9 @@ static int yy_token(int tok, yyguts_t* yyg) {
     case T_OBJECT_OPERATOR:
     case T_PAAMAYIM_NEKUDOTAYIM:
     case T_FUNCTION:
+    case T_USE:
+    case T_CLASS:
+    case T_NS_SEPARATOR:
       push_state(ST_PHP_NO_RESERVED_WORDS);
       break;
 
