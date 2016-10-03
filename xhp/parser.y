@@ -40,9 +40,9 @@
 #define pop_state() xhp_new_pop_state((struct yyguts_t*) yyscanner)
 #define set_state(s) xhp_set_state(s, (struct yyguts_t*) yyscanner)
 #else
-#define push_state(s)
-#define pop_state()
-#define set_state(s)
+#define push_state(s) ;
+#define pop_state() ;
+#define set_state(s) ;
 #endif
 
 using namespace std;
@@ -202,6 +202,7 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_XHP_LT_DIV_GT
 %token T_XHP_ATTRIBUTE
 %token T_XHP_CATEGORY
+%token T_XHP_CATEGORY_LABEL
 %token T_XHP_CHILDREN
 %token T_XHP_ANY
 %token T_XHP_EMPTY
@@ -1834,9 +1835,11 @@ xhp_singleton:
     if (yyextra->include_debug) {
       char line[16];
       sprintf(line, "%lu", (unsigned long)$1.lineno());
-      $$ = (yyextra->force_global_namespace ? "new \\xhp_" : "new xhp_") + $1 + "(array(" + $2 + "), array(), __FILE__, " + line + ")";
+      $1.xhpLabel(yyextra->force_global_namespace);
+      $$ = "new " + $1 + "(array(" + $2 + "), array(), __FILE__, " + line + ")";
     } else {
-      $$ = (yyextra->force_global_namespace ? "new \\xhp_" : "new xhp_") + $1 + "(array(" + $2 + "), array())";
+      $1.xhpLabel(yyextra->force_global_namespace);
+      $$ = "new " + $1 + "(array(" + $2 + "), array())";
     }
   }
 ;
@@ -1846,20 +1849,18 @@ xhp_tag_open:
     pop_state(); // ST_XHP_ATTRS
     push_state(ST_XHP_CHILD_START);
     yyextra->pushTag($1.c_str());
-    $$ = (yyextra->force_global_namespace ? "new \\xhp_" : "new xhp_") + $1 + "(array(" + $2 + "), array(";
+    $1.xhpLabel(yyextra->force_global_namespace);
+    $$ ="new " + $1 + "(array(" + $2 + "), array(";
   }
 ;
 
 xhp_tag_close:
-  T_XHP_LT_DIV xhp_label_no_space T_XHP_TAG_GT {
+  T_XHP_TAG_LT '/' T_XHP_LABEL T_XHP_TAG_GT {
     pop_state(); // ST_XHP_CHILD_START
-    if (yyextra->peekTag() != $2.c_str()) {
-      string e1 = $2.c_str();
+    if (yyextra->peekTag() != $3.c_str()) {
+      string e1 = $3.c_str();
       string e2 = yyextra->peekTag();
-      replacestr(e1, "__", ":");
-      replacestr(e1, "_", "-");
-      replacestr(e2, "__", ":");
-      replacestr(e2, "_", "-");
+
       string e = "syntax error, mismatched tag </" + e1 + ">, expecting </" + e2 + ">";
       yyerror(yyscanner, NULL, e.c_str());
       yyextra->terminated = true;
@@ -1881,7 +1882,7 @@ xhp_tag_close:
 ;
 
 xhp_tag_start:
-  T_XHP_TAG_LT xhp_label_immediate {
+  T_XHP_TAG_LT T_XHP_LABEL {
     $$ = $2;
   }
 ;
@@ -1941,110 +1942,26 @@ xhp_attributes:
   }
 ;
 
-// Attribute when referenced as an object property ($foo->:attr)
-xhp_attribute_reference:
-  T_XHP_LABEL {
-    $$ = "getAttribute('" + $1 + "')";
-  }
-;
-
 xhp_attribute:
-  xhp_label_pass '=' xhp_attribute_value {
+  T_XHP_LABEL '=' xhp_attribute_value {
     $$ = "'" + $1 + "' => " + $3;
   }
 ;
 
 xhp_attribute_value:
-  '"' { push_state(ST_XHP_ATTR_VAL); } xhp_attribute_quoted_value '"' {
-    $$ = $3;
+  T_XHP_TEXT {
+    $$ = $1;
   }
 | '{' { push_state(ST_PHP); } expr { pop_state(); } '}' {
     $$ = $3;
   }
 ;
 
-xhp_attribute_quoted_value:
-  /* empty */ {
-    $$ = "''";
-  }
-| xhp_literal_text {
-    // XHP_ATTR_VAL is popped by the time this code runs
-    $$ = "'" + $1 + "'";
-  }
-;
-
-// Misc
-xhp_label_immediate:
+// Attribute when referenced as an object property ($foo->:attr)
+xhp_attribute_reference:
   T_XHP_LABEL {
-    $1.xhpLabel();
-    $$ = $1;
+    $$ = "getAttribute('" + $1 + "')";
   }
-| { push_state(ST_XHP_LABEL); } xhp_label_ xhp_whitespace_hack {
-    pop_state();
-    $$ = $2;
-  }
-;
-
-xhp_label_no_space:
-  { push_state(ST_XHP_LABEL); } xhp_label_ {
-    pop_state();
-    $$ = $2;
-  }
-;
-
-xhp_label_pass:
-  { push_state(ST_XHP_LABEL_WHITESPACE); } xhp_label_pass_ xhp_whitespace_hack {
-    pop_state();
-    $$ = $2;
-  }
-;
-
-xhp_label_pass_immediate:
-  { push_state(ST_XHP_LABEL); } xhp_label_pass_ xhp_whitespace_hack {
-    pop_state();
-    $$ = $2;
-  }
-;
-
-
-xhp_label:
-  { push_state(ST_XHP_LABEL_WHITESPACE); } xhp_label_ xhp_whitespace_hack {
-    pop_state();
-    $$ = $2;
-  }
-;
-
-xhp_label_:
-  T_STRING {
-    // XHP_LABEL is popped in the scanner on " ", ">", "/", or "="
-    push_state(ST_XHP_LABEL);
-    $$ = $1;
-  }
-| xhp_label_ T_XHP_COLON T_STRING {
-    $$ = $1 + "__" + $3;
-  }
-| xhp_label_ T_XHP_HYPHEN T_STRING {
-    $$ = $1 + "_" + $3;
-  }
-;
-
-xhp_label_pass_:
-  T_STRING {
-    // XHP_LABEL is popped in the scanner on " ", ">", "/", or "="
-    push_state(ST_XHP_LABEL);
-    $$ = $1;
-  }
-| xhp_label_pass_ T_XHP_COLON T_STRING {
-    $$ = $1 + ":" + $3;
-  }
-| xhp_label_pass_ T_XHP_HYPHEN T_STRING {
-    $$ = $1 + "-" + $3;
-  }
-;
-
-xhp_whitespace_hack:
-  T_XHP_WHITESPACE
-| /* empty */
 ;
 
 // Elements
@@ -2227,11 +2144,11 @@ class_statement:
 ;
 
 xhp_category_list:
-  '%' xhp_label_pass_immediate {
-    $$ = "'" + $2 + "' => 1";
+  T_XHP_CATEGORY_LABEL {
+    $$ = "'" + $1 + "' => 1";
   }
-| xhp_category_list ',' '%' xhp_label_pass_immediate {
-    $$ = $1 + ",'" + $4 + "' => 1";
+| xhp_category_list ',' T_XHP_CATEGORY_LABEL {
+    $$ = $1 + ",'" + $3 + "' => 1";
   }
 ;
 
@@ -2300,11 +2217,12 @@ xhp_children_decl_tag:
 | T_XHP_PCDATA {
     $$ = "2, null";
   }
-| T_XHP_COLON xhp_label {
-    $$ = (yyextra->force_global_namespace ? "3, \'\\\\xhp_" + $2 + "\'" : "3, \'xhp_" + $2 + "\'");
+| T_XHP_LABEL {
+    $1.xhpLabel(yyextra->force_global_namespace);
+    $$ = "3, \'" + $1 + "\'";
   }
-| '%' xhp_label {
-    $$ = "4, \'" + $2 + "\'";
+| T_XHP_CATEGORY_LABEL {
+    $$ = "4, \'" + $1 + "\'";
   }
 ;
 

@@ -526,14 +526,23 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   "::" tok(T_PAAMAYIM_NEKUDOTAYIM);
   "\\" tok(T_NS_SEPARATOR);
   "??" tok(T_COALESCE);
-  ":"{XHPLABEL}  {
+  ":"{XHPLABEL} {
     int ntt = getNextTokenType(yyextra->last_token);
     if (ntt & NextTokenType::XhpClassName) {
-      yytext++; yyleng--; // skipping the first colon
+      yytext++; yyleng--; // skipping ":"
       tok(T_XHP_LABEL);
     }
     yyless(1);
     tok(':');
+  }
+  "%"{XHPLABEL} {
+    int ntt = getNextTokenType(yyextra->last_token);
+    if (ntt & NextTokenType::XhpCategoryName) {
+      yytext++; yyleng--; // skipping "%"
+      tok(T_XHP_CATEGORY_LABEL);
+    }
+    yyless(1);
+    tok('%');
   }
 }
 
@@ -1153,22 +1162,22 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
     }
     tok(T_XHP_TEXT);
   }
-  {WHITESPACE}* {
+  {WHITESPACE}+ {
     yy_scan_newlines(yytext, yyg);
     yytext[0] = ' ';
     yytext[1] = 0;
     tok(T_XHP_TEXT);
   }
-  {WHITESPACE}*"{" {
+  "{" {
     push_state(ST_PHP);
     tok('{');
   }
-  {WHITESPACE}*"<" {
+  "<" {
     yy_scan_newlines(yytext, yyg);
     push_state(ST_XHP_IN_TAG);
     tok(T_XHP_TAG_LT);
   }
-  {WHITESPACE}*"</" {
+  "</" {
     BEGIN(ST_XHP_END_CLOSE_TAG);
     yyless(1);
     tok(T_XHP_TAG_LT);
