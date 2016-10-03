@@ -18,7 +18,7 @@ BAR;
 {$d}foo = b<<<'BAR'
 ?>
 BAR;
-if (0) <a />;
+if (0) {$d}foo = <a />;
 EOF;
 
 $preprocess = xhp_preprocess_code($code);
