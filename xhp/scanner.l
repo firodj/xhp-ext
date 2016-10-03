@@ -227,16 +227,10 @@ static bool shouldReturnToken(int t, bool force)
 %x ST_PHP_NO_RESERVED_WORDS
 %x ST_PHP_NO_RESERVED_WORDS_PERSIST
 %x ST_XHP_IN_TAG
-%x ST_XHP_LABEL
-%x ST_XHP_LABEL_WHITESPACE
-%x ST_XHP_ATTRS
-%x ST_XHP_ATTR_VAL
 %x ST_XHP_AFTER_ENT
 %x ST_XHP_CHILD
-%x ST_XHP_CHILD_START
 %x ST_XHP_INVALID_ENTITY
 %x ST_XHP_ATTR_TYPE_DECL
-%x ST_XHP_CHILDREN_DECL
 %x ST_XHP_COMMENT
 %x ST_XHP_END_SINGLETON_TAG
 %x ST_LT_CHECK
@@ -343,7 +337,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 }
 
  /* Comments and whitespace */
-<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_CHILDREN_DECL,ST_XHP_ATTR_TYPE_DECL,ST_XHP_IN_TAG>{
+<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL,ST_XHP_IN_TAG>{
   "#"|"//" {
     push_state(ST_PHP_EOL_COMMENT);
     yymore();
@@ -748,81 +742,10 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   tok(T_XHP_TAG_GT);
 }
 
-<ST_XHP_LABEL_WHITESPACE>{
-  {WHITESPACE}+ yy_scan_newlines(yytext, yyg);
-}
-<ST_XHP_LABEL,ST_XHP_LABEL_WHITESPACE>{
-  ":" tok(T_XHP_COLON);
-  "-" tok(T_XHP_HYPHEN);
-  "::" {
-    pop_state();
-
-    // Hack: Please don't expect this to work: $foo = <a href={Thing::if} />;
-    // PHP will let you use reserved words for member variables and methods, but
-    // they are verboten in XHP classes now.
-    //
-    // We don't use tok() because that pushes ST_PHP_NO_RESERVED_WORDS, which the
-    // scanner expects to pop at some point, but XHP_LABEL (in parser.y) will pop
-    // sooner and then you're left with an imbalanced tag stack and that's when
-    // the fun stops.
-  *yylval = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno);
-#ifdef DEBUG
-  yy_log_token(T_PAAMAYIM_NEKUDOTAYIM);
-#endif
-    return T_PAAMAYIM_NEKUDOTAYIM;
-  }
-  "->" {
-    pop_state();
-    // Hack: Don't use tok() here because of ST_PHP_NO_RESERVED_WORDS. See above.
-    *yylval = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno);
-    return T_OBJECT_OPERATOR;
-  }
-  "--" {
-    pop_state();
-    tok(T_DEC);
-  }
-  {WHITESPACE} {
-    yy_scan_newlines(yytext, yyg);
-    pop_state();
-    tok(T_XHP_WHITESPACE);
-  }
-  {LABEL} tok(T_STRING);
-  . {
-    pop_state();
-    tok(yytext[0]);
-  }
-}
-
-<ST_XHP_ATTRS>{
-  "="|"/"|">" tok(yytext[0]);
-  {WHITESPACE}+ yy_scan_newlines(yytext, yyg);
-  {LABEL} tok(T_STRING);
-}
-
-<ST_XHP_ATTR_VAL>{
-  [^&'\\"]+ tok(T_XHP_TEXT);
-  \" {
-    pop_state();
-    tok('"');
-  }
-}
-
-<ST_XHP_CHILD_START>{
-  {WHITESPACE}+ {
-    /* ignore whitespace at the start */
-    yy_scan_newlines(yytext, yyg);
-    unput(' ');
-    set_state(ST_XHP_CHILD);
-  }
-  . {
-    yyless(0);
-    set_state(ST_XHP_CHILD);
-  }
-}
 
  /* Below we use tokt() (and not tok) which internally transits to
   * the XHP_AFTER_ENT state. */
-<ST_XHP_CHILD,ST_XHP_AFTER_ENT,ST_XHP_ATTR_VAL>{
+<ST_XHP_CHILD,ST_XHP_AFTER_ENT>{
   /* xml entities */
   (?-i:&quot;) tokt("\"");
   (?-i:&amp;) tokt("&");
@@ -1162,24 +1085,24 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
     }
     tok(T_XHP_TEXT);
   }
-  {WHITESPACE}+ {
+  {WHITESPACE}* {
     yy_scan_newlines(yytext, yyg);
     yytext[0] = ' ';
     yytext[1] = 0;
     tok(T_XHP_TEXT);
   }
-  "{" {
+  {WHITESPACE}*"{" {
     push_state(ST_PHP);
     tok('{');
   }
-  "<" {
+  {WHITESPACE}*"<" {
     yy_scan_newlines(yytext, yyg);
     push_state(ST_XHP_IN_TAG);
     tok(T_XHP_TAG_LT);
   }
-  "</" {
+  {WHITESPACE}*"</" {
     BEGIN(ST_XHP_END_CLOSE_TAG);
-    yyless(1);
+    yyless(yyleng - 1);
     tok(T_XHP_TAG_LT);
   }
 }
@@ -1205,20 +1128,6 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 
 <ST_XHP_COMMENT>"-" {
   yymore();
-}
-
-<ST_XHP_CHILDREN_DECL>{
-  any tok(T_XHP_ANY);
-  pcdata tok(T_XHP_PCDATA);
-  empty tok(T_XHP_EMPTY);
-  {LABEL} tok(T_STRING);
-  ";" {
-    pop_state();
-    tok(';');
-  }
-  ":" {
-    tok(T_XHP_COLON);
-  }
 }
 
  /* Other */
@@ -1256,26 +1165,14 @@ static const char* yy_state_name(int state) {
       return "ST_PHP_NO_RESERVED_WORDS";
     case ST_PHP_NO_RESERVED_WORDS_PERSIST:
       return "ST_PHP_NO_RESERVED_WORDS_PERSIST";
-    case ST_XHP_LABEL:
-      return "ST_XHP_LABEL";
-    case ST_XHP_LABEL_WHITESPACE:
-      return "ST_XHP_LABEL_WHITESPACE";
-    case ST_XHP_ATTRS:
-      return "ST_XHP_ATTRS";
-    case ST_XHP_ATTR_VAL:
-      return "ST_XHP_ATTR_VAL";
     case ST_XHP_AFTER_ENT:
       return "ST_XHP_AFTER_ENT";
     case ST_XHP_CHILD:
       return "ST_XHP_CHILD";
-    case ST_XHP_CHILD_START:
-      return "ST_XHP_CHILD_START";
     case ST_XHP_INVALID_ENTITY:
       return "ST_XHP_INVALID_ENTITY";
     case ST_XHP_ATTR_TYPE_DECL:
       return "ST_XHP_ATTR_TYPE_DECL";
-    case ST_XHP_CHILDREN_DECL:
-      return "ST_XHP_CHILDREN_DECL";
     case ST_XHP_COMMENT:
       return "ST_XHP_COMMENT";
     default:

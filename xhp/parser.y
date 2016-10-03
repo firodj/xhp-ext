@@ -35,15 +35,6 @@
 #undef yylineno
 #define yylineno yyextra->first_lineno
 #define cr(s) code_rope(s, yylineno)
-#if 0
-#define push_state(s) xhp_new_push_state(s, (struct yyguts_t*) yyscanner)
-#define pop_state() xhp_new_pop_state((struct yyguts_t*) yyscanner)
-#define set_state(s) xhp_set_state(s, (struct yyguts_t*) yyscanner)
-#else
-#define push_state(s) ;
-#define pop_state() ;
-#define set_state(s) ;
-#endif
 
 using namespace std;
 
@@ -198,8 +189,6 @@ static void replacestr(string &source, const string &find, const string &rep) {
 
 %token T_XHP_WHITESPACE
 %token T_XHP_TEXT
-%token T_XHP_LT_DIV
-%token T_XHP_LT_DIV_GT
 %token T_XHP_ATTRIBUTE
 %token T_XHP_CATEGORY
 %token T_XHP_CATEGORY_LABEL
@@ -1831,7 +1820,6 @@ xhp_tag_expression:
 
 xhp_singleton:
   xhp_tag_start xhp_attributes '/' T_XHP_TAG_GT {
-    pop_state(); // ST_XHP_ATTRS
     if (yyextra->include_debug) {
       char line[16];
       sprintf(line, "%lu", (unsigned long)$1.lineno());
@@ -1846,8 +1834,6 @@ xhp_singleton:
 
 xhp_tag_open:
   xhp_tag_start xhp_attributes T_XHP_TAG_GT {
-    pop_state(); // ST_XHP_ATTRS
-    push_state(ST_XHP_CHILD_START);
     yyextra->pushTag($1.c_str());
     $1.xhpLabel(yyextra->force_global_namespace);
     $$ ="new " + $1 + "(array(" + $2 + "), array(";
@@ -1856,7 +1842,6 @@ xhp_tag_open:
 
 xhp_tag_close:
   T_XHP_TAG_LT '/' T_XHP_LABEL T_XHP_TAG_GT {
-    pop_state(); // ST_XHP_CHILD_START
     if (yyextra->peekTag() != $3.c_str()) {
       string e1 = $3.c_str();
       string e2 = yyextra->peekTag();
@@ -1866,17 +1851,12 @@ xhp_tag_close:
       yyextra->terminated = true;
     }
     yyextra->popTag();
-    if (yyextra->haveTag()) {
-      set_state(ST_XHP_CHILD_START);
-    }
+    if (yyextra->haveTag()) ; // ST_XHP_CHILD_START
   }
-| T_XHP_LT_DIV_GT {
+| T_XHP_TAG_LT '/' T_XHP_TAG_GT {
     // empty end tag -- SGML SHORTTAG
-    pop_state(); // ST_XHP_CHILD_START
     yyextra->popTag();
-    if (yyextra->haveTag()) {
-      set_state(ST_XHP_CHILD_START);
-    }
+    if (yyextra->haveTag()) ; // ST_XHP_CHILD_START
     $$ = "))";
   }
 ;
@@ -1904,15 +1884,15 @@ xhp_children:
     $$ = "";
   }
 | xhp_literal_text {
-    set_state(ST_XHP_CHILD_START);
+    // ST_XHP_CHILD_START
     $$ = "'" + $1 + "',";
   }
 | xhp_children xhp_child {
-    set_state(ST_XHP_CHILD_START);
+    // ST_XHP_CHILD_START
     $$ = $1 + $2 + ",";
   }
 | xhp_children xhp_child xhp_literal_text {
-    set_state(ST_XHP_CHILD_START);
+    // ST_XHP_CHILD_START
     $$ = $1 + $2 + ",'" + $3 + "',";
   }
 ;
@@ -1920,13 +1900,11 @@ xhp_children:
 xhp_child:
   xhp_tag_expression
 | '{' {
-    push_state(ST_PHP);
     yyextra->pushStack();
   } expr '}' {
-    pop_state();
     yyextra->popStack();
   } {
-    set_state(ST_XHP_CHILD_START);
+    // ST_XHP_CHILD_START
     $$ = $3;
   }
 ;
@@ -1935,7 +1913,6 @@ xhp_child:
 xhp_attributes:
   /* empty */ {
     $$ = "";
-    push_state(ST_XHP_ATTRS);
   }
 | xhp_attributes xhp_attribute {
     $$ = $1 + $2 + ",";
@@ -1952,8 +1929,8 @@ xhp_attribute_value:
   T_XHP_TEXT {
     $$ = $1;
   }
-| '{' { push_state(ST_PHP); } expr { pop_state(); } '}' {
-    $$ = $3;
+| '{' expr '}' {
+    $$ = $2;
   }
 ;
 
@@ -2132,12 +2109,11 @@ xhp_attribute_is_required:
 
 // Element category declaration
 class_statement:
-  T_XHP_CATEGORY { push_state(ST_PHP_NO_RESERVED_WORDS_PERSIST); } xhp_category_list ';' {
-    pop_state();
+  T_XHP_CATEGORY xhp_category_list ';' {
     yyextra->used = true;
     $$ =
       "protected function &__xhpCategoryDeclaration() {" +
-         code_rope("static $_ = array(") + $3 + ");" +
+         code_rope("static $_ = array(") + $2 + ");" +
         "return $_;" +
       "}";
   }
@@ -2154,10 +2130,10 @@ xhp_category_list:
 
 // Element child list
 class_statement:
-  T_XHP_CHILDREN { push_state(ST_XHP_CHILDREN_DECL); } xhp_children_decl ';' {
+  T_XHP_CHILDREN xhp_children_decl ';' {
     // ST_XHP_CHILDREN_DECL is popped in the scanner on ';'
     yyextra->used = true;
-    $$ = "protected function &__xhpChildrenDeclaration() {" + $3 + "}";
+    $$ = "protected function &__xhpChildrenDeclaration() {" + $2 + "}";
   }
 ;
 
