@@ -6,7 +6,7 @@ if test "$PHP_XHP" = "yes"; then
 #  XHP_SHARED_DEPENDENCIES="libxhp.a"
   PHP_ADD_LIBRARY(stdc++,, XHP_SHARED_LIBADD)
   PHP_SUBST(XHP_SHARED_LIBADD)
-  PHP_NEW_EXTENSION(xhp, ext.cpp, $ext_shared)
+  PHP_NEW_EXTENSION(xhp, ext.cpp ext_tokeniz.cpp, $ext_shared)
   PHP_ADD_LIBRARY_WITH_PATH(xhp, $ext_srcdir/xhp/, XHP_SHARED_LIBADD)
   PHP_ADD_MAKEFILE_FRAGMENT
 fi

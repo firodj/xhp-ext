@@ -112,7 +112,7 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_CHARACTER /* unused in vanilla PHP */
 %token T_BAD_CHARACTER /* unused in vanilla PHP */
 %token T_ENCAPSED_AND_WHITESPACE 322
-%token T_CONSTANT_ENCAPSED_STRING 323 /* overloaded in XHP; replaces '"' encaps_list '"' */
+%token T_CONSTANT_ENCAPSED_STRING 323
 
 %token T_BACKTICKS_EXPR /* new in XHP; replaces '`' backticks_expr '`' */
 %token T_ECHO 328

@@ -326,6 +326,8 @@ static zend_bool tokenize(zval *return_value, zend_string *source)
   return 1;
 }
 
+void xhp_tokenizer_register_constants(INIT_FUNC_ARGS);
+
 //
 // globals initialization
 static void php_xhp_init_globals(zend_xhp_globals* xhp_globals) {
@@ -366,6 +368,8 @@ static PHP_MINIT_FUNCTION(xhp) {
     zend_compile_file = xhp_compile_file;
   }
 
+  xhp_tokenizer_register_constants(INIT_FUNC_ARGS_PASSTHRU);
+
   // For eval
   dist_compile_string = zend_compile_string;
   zend_compile_string = xhp_compile_string;
@@ -385,6 +389,7 @@ static PHP_MINFO_FUNCTION(xhp) {
   php_info_print_table_row(2, "Include Debug Info Into XHP Classes", XHPG(include_debug) ? "enabled" : "disabled");
   php_info_print_table_row(2, "Manual Support For func_call()['key'] Syntax", XHPG(idx_expr) ? "enabled" : "disabled");
   php_info_print_table_row(2, "Force XHP Into The Global Namespace", XHPG(force_global_namespace) ? "enabled" : "disabled");
+  php_info_print_table_row(2, "XHP Parser in Moderate", XHPG(moderate_parse) ? "enabled" : "disabled");
   php_info_print_table_end();
 }
 
