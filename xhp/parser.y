@@ -99,88 +99,88 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %left T_ENDIF
 %right T_STATIC T_ABSTRACT T_FINAL T_PRIVATE T_PROTECTED T_PUBLIC
 
-%token T_EXIT
-%token T_IF
+%token T_EXIT 326
+%token T_IF 327
 
-%token T_LNUMBER
-%token T_DNUMBER
-%token T_STRING
-%token T_STRING_VARNAME /* unused in XHP: `foo` in `"$foo"` */
-%token T_VARIABLE
-%token T_NUM_STRING /* unused in XHP: `0` in `"$foo[0]"` */
-%token T_INLINE_HTML
+%token T_LNUMBER 317
+%token T_DNUMBER 318
+%token T_STRING 319
+%token T_STRING_VARNAME 324
+%token T_VARIABLE 320
+%token T_NUM_STRING 325
+%token T_INLINE_HTML 321
 %token T_CHARACTER /* unused in vanilla PHP */
 %token T_BAD_CHARACTER /* unused in vanilla PHP */
-%token T_ENCAPSED_AND_WHITESPACE /* unused in XHP: ` ` in `" "` */
-%token T_CONSTANT_ENCAPSED_STRING /* overloaded in XHP; replaces '"' encaps_list '"' */
+%token T_ENCAPSED_AND_WHITESPACE 322
+%token T_CONSTANT_ENCAPSED_STRING 323 /* overloaded in XHP; replaces '"' encaps_list '"' */
 
 %token T_BACKTICKS_EXPR /* new in XHP; replaces '`' backticks_expr '`' */
-%token T_ECHO
-%token T_DO
-%token T_WHILE
-%token T_ENDWHILE
-%token T_FOR
-%token T_ENDFOR
-%token T_FOREACH
-%token T_ENDFOREACH
-%token T_DECLARE
-%token T_ENDDECLARE
-%token T_AS
-%token T_SWITCH
-%token T_ENDSWITCH
-%token T_CASE
-%token T_DEFAULT
-%token T_BREAK
-%token T_CONTINUE
-%token T_GOTO
-%token T_FUNCTION
-%token T_CONST
-%token T_RETURN
-%token T_TRY
-%token T_CATCH
-%token T_FINALLY
-%token T_THROW
-%token T_USE
-%token T_GLOBAL
-%token T_VAR
-%token T_UNSET
-%token T_ISSET
-%token T_EMPTY
-%token T_HALT_COMPILER
-%token T_CLASS
-%token T_INTERFACE
-%token T_EXTENDS
-%token T_IMPLEMENTS
-%token T_OBJECT_OPERATOR
-%token T_DOUBLE_ARROW
-%token T_LIST
-%token T_ARRAY
-%token T_CALLABLE
-%token T_CLASS_C
-%token T_METHOD_C
-%token T_FUNC_C
-%token T_TRAIT_C
-%token T_LINE
-%token T_FILE
-%token T_COMMENT
-%token T_DOC_COMMENT
-%token T_OPEN_TAG
-%token T_OPEN_TAG_WITH_ECHO
+%token T_ECHO 328
+%token T_DO 329
+%token T_WHILE 330
+%token T_ENDWHILE 331
+%token T_FOR 332
+%token T_ENDFOR 333
+%token T_FOREACH 334
+%token T_ENDFOREACH 335
+%token T_DECLARE 336
+%token T_ENDDECLARE 337
+%token T_AS 338
+%token T_SWITCH 339
+%token T_ENDSWITCH 340
+%token T_CASE 341
+%token T_DEFAULT 342
+%token T_BREAK 343
+%token T_CONTINUE 344
+%token T_GOTO 345
+%token T_FUNCTION 346
+%token T_CONST 347
+%token T_RETURN 348
+%token T_TRY 349
+%token T_CATCH 350
+%token T_FINALLY 351
+%token T_THROW 352
+%token T_USE 353
+%token T_GLOBAL 355
+%token T_VAR 356
+%token T_UNSET 357
+%token T_ISSET 358
+%token T_EMPTY 359
+%token T_HALT_COMPILER 360
+%token T_CLASS 361
+%token T_INTERFACE 363
+%token T_EXTENDS 364
+%token T_IMPLEMENTS 365
+%token T_OBJECT_OPERATOR 366
+%token T_DOUBLE_ARROW 268
+%token T_LIST 367
+%token T_ARRAY 368
+%token T_CALLABLE 369
+%token T_CLASS_C 373
+%token T_METHOD_C 375
+%token T_FUNC_C 376
+%token T_TRAIT_C 374
+%token T_LINE 370
+%token T_FILE 371
+%token T_COMMENT 377
+%token T_DOC_COMMENT 378
+%token T_OPEN_TAG 379
+%token T_OPEN_TAG_WITH_ECHO 380
 %token T_OPEN_TAG_FAKE
-%token T_CLOSE_TAG
-%token T_WHITESPACE
+%token T_CLOSE_TAG 381
+%token T_WHITESPACE 382
 %token T_HEREDOC
-%token T_DOLLAR_OPEN_CURLY_BRACES
-%token T_PAAMAYIM_NEKUDOTAYIM
-%token T_NAMESPACE
-%token T_NS_C
-%token T_DIR
-%token T_NS_SEPARATOR
-%token T_TRAIT
-%token T_INSTEADOF
-%token T_YIELD
+%token T_DOLLAR_OPEN_CURLY_BRACES 385
+%token T_PAAMAYIM_NEKUDOTAYIM 387
+%token T_NAMESPACE 388
+%token T_NS_C 389
+%token T_DIR 372
+%token T_NS_SEPARATOR 390
+%token T_TRAIT 362
+%token T_INSTEADOF 354
+%token T_YIELD 267
 %token T_VARIADIC_PARAMETER
-%token T_COALESCE
+%token T_COALESCE 282
 
 %token T_XHP_WHITESPACE
 %token T_XHP_TEXT
@@ -209,6 +209,61 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_UNRESOLVED_OP
 %token T_UNRESOLVED_LT
 
+%token T_PUBLIC 316
+%token T_PROTECTED 315
+%token T_PRIVATE 314
+%token T_FINAL 313
+%token T_ABSTRACT 312
+%token T_STATIC 311
+%token T_ENDIF 310
+%token T_ELSE 309
+%token T_ELSEIF 308
+%token T_CLONE 306
+%token T_NEW 305
+%token T_POW 304
+%token T_UNSET_CAST 303
+%token T_BOOL_CAST 302
+%token T_OBJECT_CAST 301
+%token T_ARRAY_CAST 300
+%token T_STRING_CAST 299
+%token T_DOUBLE_CAST 298
+%token T_INT_CAST 297
+%token T_DEC 296
+%token T_INC 295
+%token T_INSTANCEOF 294
+%token T_SR 293
+%token T_SL 292
+%token T_IS_GREATER_OR_EQUAL 291
+%token T_IS_SMALLER_OR_EQUAL 290
+%token T_SPACESHIP 289
+%token T_IS_NOT_IDENTICAL 288
+%token T_IS_IDENTICAL 287
+%token T_IS_NOT_EQUAL 286
+%token T_IS_EQUAL 285
+%token T_BOOLEAN_AND 284
+%token T_BOOLEAN_OR 283
+%token T_POW_EQUAL 281
+%token T_SR_EQUAL 280
+%token T_SL_EQUAL 279
+%token T_XOR_EQUAL 278
+%token T_OR_EQUAL 277
+%token T_AND_EQUAL 276
+%token T_MOD_EQUAL 275
+%token T_CONCAT_EQUAL 274
+%token T_DIV_EQUAL 273
+%token T_MUL_EQUAL 272
+%token T_MINUS_EQUAL 271
+%token T_PLUS_EQUAL 270
+%token T_YIELD_FROM 269
+%token T_PRINT 266
+%token T_LOGICAL_AND 265
+%token T_LOGICAL_XOR 264
+%token T_LOGICAL_OR 263
+%token T_REQUIRE_ONCE 262
+%token T_REQUIRE 261
+%token T_EVAL 260
+%token T_INCLUDE_ONCE 259
+%token T_INCLUDE 258
 %%
 
 start:
