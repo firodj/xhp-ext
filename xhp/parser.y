@@ -169,14 +169,9 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_OPEN_TAG_FAKE
 %token T_CLOSE_TAG
 %token T_WHITESPACE
-%token T_START_HEREDOC /* unused in XHP; replaced with T_HEREDOC */
-%token T_END_HEREDOC /* unused in XHP; replaced with T_HEREDOC */
-%token T_HEREDOC /* new in XHP; replaces start_heredoc encaps_list T_END_HEREDOC */
-%token T_DOLLAR_OPEN_CURLY_BRACES /* unused in XHP: `${` in `"${foo}"` */
-%token T_CURLY_OPEN /* unused in XHP: `{$` in `"{$foo}"` */
+%token T_HEREDOC
+%token T_DOLLAR_OPEN_CURLY_BRACES
 %token T_PAAMAYIM_NEKUDOTAYIM
-%token T_BINARY_DOUBLE /* unused in XHP: `b"` in `b"foo"` */
-%token T_BINARY_HEREDOC /* unused in XHP: `b<<<` in `b<<<FOO` */
 %token T_NAMESPACE
 %token T_NS_C
 %token T_DIR
