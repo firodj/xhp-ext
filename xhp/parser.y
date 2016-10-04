@@ -1898,13 +1898,9 @@ xhp_children:
 
 xhp_child:
   xhp_tag_expression
-| '{' {
-    yyextra->pushStack();
-  } expr '}' {
-    yyextra->popStack();
-  } {
+| '{' expr '}' {
     // ST_XHP_CHILD_START
-    $$ = $3;
+    $$ = $2;
   }
 ;
 

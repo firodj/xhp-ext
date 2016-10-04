@@ -473,7 +473,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   "..." tok(T_VARIADIC_PARAMETER);
   __namespace__ tok(T_NS_C);
   __dir__ tok(T_DIR);
-  attribute {
+  (?-i:"attribute") {
     if ((last_token() == '{' || last_token() == '}' || last_token() == ';')) {
       push_state(ST_XHP_ATTR_TYPE_DECL);
       tok(T_XHP_ATTRIBUTE);
@@ -481,14 +481,14 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
       tok(T_STRING);
     }
   }
-  category {
+  (?-i:"category") {
     if ((last_token() == '{' || last_token() == '}' || last_token() == ';')) {
       tok(T_XHP_CATEGORY);
     } else {
       tok(T_STRING);
     }
   }
-  children {
+  (?-i:"children") {
     if ((last_token() == '{' || last_token() == '}' || last_token() == ';')) {
       push_state(ST_XHP_CHILDREN_DECL);
       tok(T_XHP_CHILDREN);
