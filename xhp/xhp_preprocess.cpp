@@ -110,7 +110,7 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
 
   // Parse the PHP
   void *lex_state;
-  xhp_init_lexical_state(buffer, in.size()+2, &lex_state, false);
+  xhp_init_lexical_state(buffer, in.size()+2, &lex_state, true);
   char *code_str;
   size_t lineno, oldlineno=0;
 

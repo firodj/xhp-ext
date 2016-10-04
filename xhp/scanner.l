@@ -529,7 +529,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   "\\" tok(T_NS_SEPARATOR);
   "??" tok(T_COALESCE);
   ":"{XHPLABEL} {
-    int ntt = getNextTokenType(yyextra->last_token);
+    int ntt = getNextTokenType(last_token());
     if (ntt & NextTokenType::XhpClassName) {
       yytext++; yyleng--; // skipping ":"
       tok(T_XHP_LABEL);
@@ -538,7 +538,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
     tok(':');
   }
   "%"{XHPLABEL} {
-    int ntt = getNextTokenType(yyextra->last_token);
+    int ntt = getNextTokenType(last_token());
     if (ntt & NextTokenType::XhpCategoryName) {
       yytext++; yyleng--; // skipping "%"
       tok(T_XHP_CATEGORY_LABEL);
@@ -617,7 +617,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 
  /* XHP */
 <ST_PHP>"<"[a-zA-Z_\x7f-\xff] {
-  int ntt = getNextTokenType(yyextra->last_token);
+  int ntt = getNextTokenType(last_token());
 
   if (ntt & NextTokenType::XhpTag) {
     yyless(1);
@@ -1227,10 +1227,12 @@ static int yy_token(int tok, yyguts_t* yyg) {
       push_state(ST_PHP_NO_RESERVED_WORDS);
       break;
 
-    case '{':
-      // not used anymore
-      yyextra->curly_stack.push(tok);
+    case T_XHP_LABEL:
+      if (yyextra->return_all_tokens) {
+        yylval->prepend(":");
+      }
       break;
+
   }
 #ifdef DEBUG
   yy_log_token(tok);

@@ -46,8 +46,8 @@ const char* code_rope::c_str() const {
   }
 }
 
-void code_rope::prepend(const char* str) {
-  this->str = _rope_t(str) + this->str;
+void code_rope::prepend(const char* pre_str) {
+  this->str.insert(0, pre_str);
 }
 
 const char code_rope::back() const {
@@ -132,6 +132,6 @@ void code_rope::xhpLabel(bool global_ns /* = true */) {
   replaceAll(":", "__");
   replaceAll("-", "_");
 
-  str.insert(0, "xhp_");
-  if (global_ns) str.insert(0, "\\");
+  prepend("xhp_");
+  if (global_ns) prepend("\\");
 }
