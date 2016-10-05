@@ -2058,7 +2058,7 @@ xhp_attribute_decl_type:
     $$ = "4, " + $2;
   }
 | class_name {
-    $$ = "5, '" + $1 + "'";
+    $$ = "5, " + $1 + "::class";
   }
 | T_VAR {
     $$ = "6, null";
@@ -2112,7 +2112,7 @@ xhp_attribute_array_value_type:
     $$ = "4," + $2;
   }
 | class_name {
-    $$ = "5,'" + $1 + "'";
+    $$ = "5," + $1 + "::class";
   }
 | T_XHP_FLOAT {
     $$ = "8";
