@@ -172,6 +172,7 @@ static int getNextTokenType(int t) {
              NextTokenType::XhpClassName |
              NextTokenType::XhpCategoryName;
     case '}':
+    case T_OPEN_TAG:
       return NextTokenType::XhpTagMaybe |
              NextTokenType::XhpClassName;
     case T_INC:
