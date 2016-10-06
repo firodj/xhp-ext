@@ -7,6 +7,7 @@ xhp/scanner.lex.*
 xhp/fastpath.cpp
 xhp/libxhp.so
 xhp/xhpize
+xhp/rope_test
 /.deps
 /.libs
 /Makefile
@@ -36,3 +37,10 @@ xhp/xhpize
 *.cmake
 CMakeFiles
 CMakeCache.txt
+tests/*.diff
+tests/*.exp
+tests/*.log
+tests/*.out
+tests/*.php
+tests/*.sh
+

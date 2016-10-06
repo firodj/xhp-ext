@@ -1,7 +1,7 @@
 ifdef DEBUG
-CPPFLAGS = -fPIC -ggdb -Wall -DDEBUG
+CPPFLAGS = -fPIC -ggdb -Wall -DDEBUG -std=c++11
 else
-CPPFLAGS = -fPIC -g -Wall -O3 -minline-all-stringops
+CPPFLAGS = -fPIC -g -Wall -O3 -minline-all-stringops -std=c++11
 endif
 
 ifdef PROFILE

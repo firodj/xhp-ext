@@ -39,17 +39,17 @@
   if (!yyg->yy_more_len) \
     yyextra->first_lineno = yyextra->lineno;
 
+#define tok_consume() \
+  *yylval = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno)
+
+#define tok_return(t) \
+  if (shouldReturnToken(t, yyextra->return_all_tokens)) \
+    return yy_token(t, yyg)
+
 #define tok(t) \
   *yylval = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno); \
   if (shouldReturnToken(t, yyextra->return_all_tokens)) \
     return yy_token(t, yyg)
-
-#ifdef DEBUG
-  static void yy_log_token(int tok);
-  #define tokt(t) *yylval = t; push_state(ST_XHP_AFTER_ENT); yy_log_token(T_XHP_TEXT); return yyextra->last_token = T_XHP_TEXT;
-#else
-  #define tokt(t) *yylval = t; push_state(ST_XHP_AFTER_ENT); return yyextra->last_token = T_XHP_TEXT;
-#endif
 
 #define YY_USER_INIT \
   if (yyextra->insert_token) { \
@@ -64,31 +64,6 @@ using namespace std;
 const char* yytokname(int tok);
 static int yy_token(int tok, struct yyguts_t* yyg);
 static void yy_scan_newlines(const char* text, struct yyguts_t* yyg);
-
-static bool utf8ize(uint32_t v, char* buf /* [5] */) {
-  if (v <= 0x7f) { // 0xxxxxxx
-    buf[0] = v;
-    buf[1] = 0;
-  } else if (v <= 0x7ff) { // 110yyyxx 10xxxxxx
-    buf[0] = 0xc0 | (v >> 6);
-    buf[1] = 0x80 | (v & 0x3f);
-    buf[2] = 0;
-  } else if (v <= 0xffff) { // 1110yyyy 10yyyyxx 10xxxxxx
-    buf[0] = 0xe0 | (v >> 12);
-    buf[1] = 0x80 | ((v >> 6) & 0x3f);
-    buf[2] = 0x80 | (v & 0x3f);
-    buf[3] = 0;
-  } else if (v <= 0x1fffff) { // 11110zzz 10zzyyyy 10yyyyxx 10xxxxxx
-    buf[0] = 0xf0 | (v >> 18);
-    buf[1] = 0x80 | ((v >> 12) & 0x3f);
-    buf[2] = 0x80 | ((v >> 6) & 0x3f);
-    buf[3] = 0x80 | (v & 0x3f);
-    buf[4] = 0;
-  } else {
-    return false;
-  }
-  return true;
-}
 
 /**
  * "Next token types" tell us how to interpret the next characters in the
@@ -228,9 +203,7 @@ static bool shouldReturnToken(int t, bool force)
 %x ST_PHP_NO_RESERVED_WORDS
 %x ST_PHP_NO_RESERVED_WORDS_PERSIST
 %x ST_XHP_IN_TAG
-%x ST_XHP_AFTER_ENT
 %x ST_XHP_CHILD
-%x ST_XHP_INVALID_ENTITY
 %x ST_XHP_ATTR_TYPE_DECL
 %x ST_XHP_CHILDREN_DECL
 %x ST_XHP_COMMENT
@@ -631,7 +604,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
     // determine if this is the beginning of an XHP tag.
     yyless(0);
     BEGIN(ST_LT_CHECK);
-    break;
+    YY_BREAK;
   }
 
   yyless(1);
@@ -715,401 +688,69 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 
 
  /* XHP */
-<ST_XHP_IN_TAG>{XHPLABEL} {
+<ST_XHP_IN_TAG>{
+  {XHPLABEL} {
    tok(T_XHP_LABEL);
-}
-<ST_XHP_IN_TAG>"=" {
-  tok(yytext[0]);
-}
-<ST_XHP_IN_TAG>["][^"]*["] {
-  tok(T_XHP_TEXT);
-}
-<ST_XHP_IN_TAG>[{] {
-  push_state(ST_PHP);
-  tok('{');
-}
-<ST_XHP_IN_TAG>">" {
-  BEGIN(ST_XHP_CHILD);
-  tok(T_XHP_TAG_GT);
-}
-<ST_XHP_IN_TAG>"/>" {
-  BEGIN(ST_XHP_END_SINGLETON_TAG);
-  yyless(1);
-  tok('/');
-}
-<ST_XHP_IN_TAG>{ANY_CHAR} {
-  // This rule ensures we get a reasonable syntax error message
-  // when unexpected characters occur inside XHP tags
-  if (!yyextra->terminated) {
-    yyextra->error = string("Invalid entity: (") + yytext + ")";
-    yyextra->terminated = true;
   }
-  tok(yytext[0]);
+  "=" {
+    tok(yytext[0]);
+  }
+  ["][^"]*["] {
+    yytext++; yyleng--;
+    yytext[yyleng-1] = 0; // skipping "quote"
+    tok_consume();
+    yylval->xhpDecode();
+    tok_return(T_XHP_TEXT);
+  }
+  [{] {
+    push_state(ST_PHP);
+    tok('{');
+  }
+  ">" {
+    BEGIN(ST_XHP_CHILD);
+    tok(T_XHP_TAG_GT);
+  }
+  "/>" {
+    BEGIN(ST_XHP_END_SINGLETON_TAG);
+    yyless(1);
+    tok('/');
+  }
+  {ANY_CHAR} {
+    // This rule ensures we get a reasonable syntax error message
+    // when unexpected characters occur inside XHP tags
+    if (!yyextra->terminated) {
+      yyextra->error = string("Invalid entity: (") + yytext + ")";
+      yyextra->terminated = true;
+    }
+    tok(yytext[0]);
+  }
 }
+
 <ST_XHP_END_SINGLETON_TAG>">" {
   pop_state();
   tok(T_XHP_TAG_GT);
 }
 
-
- /* Below we use tokt() (and not tok) which internally transits to
-  * the XHP_AFTER_ENT state. */
-<ST_XHP_CHILD,ST_XHP_AFTER_ENT>{
-  /* xml entities */
-  (?-i:&quot;) tokt("\"");
-  (?-i:&amp;) tokt("&");
-  (?-i:&apos;) tokt("\\'");
-  (?-i:&lt;) tokt("<")
-  (?-i:&gt;) tokt(">");
-
-  /* html entities */
-  (?-i:&nbsp;) tokt("\u00A0");
-  (?-i:&iexcl;) tokt("\u00A1");
-  (?-i:&cent;) tokt("\u00A2");
-  (?-i:&pound;) tokt("\u00A3");
-  (?-i:&curren;) tokt("\u00A4");
-  (?-i:&yen;) tokt("\u00A5");
-  (?-i:&brvbar;) tokt("\u00A6");
-  (?-i:&sect;) tokt("\u00A7");
-  (?-i:&uml;) tokt("\u00A8");
-  (?-i:&copy;) tokt("\u00A9");
-  (?-i:&ordf;) tokt("\u00AA");
-  (?-i:&laquo;) tokt("\u00AB");
-  (?-i:&not;) tokt("\u00AC");
-  (?-i:&shy;) tokt("\u00AD");
-  (?-i:&reg;) tokt("\u00AE");
-  (?-i:&macr;) tokt("\u00AF");
-  (?-i:&deg;) tokt("\u00B0");
-  (?-i:&plusmn;) tokt("\u00B1");
-  (?-i:&sup2;) tokt("\u00B2");
-  (?-i:&sup3;) tokt("\u00B3");
-  (?-i:&acute;) tokt("\u00B4");
-  (?-i:&micro;) tokt("\u00B5");
-  (?-i:&para;) tokt("\u00B6");
-  (?-i:&middot;) tokt("\u00B7");
-  (?-i:&cedil;) tokt("\u00B8");
-  (?-i:&sup1;) tokt("\u00B9");
-  (?-i:&ordm;) tokt("\u00BA");
-  (?-i:&raquo;) tokt("\u00BB");
-  (?-i:&frac14;) tokt("\u00BC");
-  (?-i:&frac12;) tokt("\u00BD");
-  (?-i:&frac34;) tokt("\u00BE");
-  (?-i:&iquest;) tokt("\u00BF");
-  (?-i:&Agrave;) tokt("\u00C0");
-  (?-i:&Aacute;) tokt("\u00C1");
-  (?-i:&Acirc;) tokt("\u00C2");
-  (?-i:&Atilde;) tokt("\u00C3");
-  (?-i:&Auml;) tokt("\u00C4");
-  (?-i:&Aring;) tokt("\u00C5");
-  (?-i:&AElig;) tokt("\u00C6");
-  (?-i:&Ccedil;) tokt("\u00C7");
-  (?-i:&Egrave;) tokt("\u00C8");
-  (?-i:&Eacute;) tokt("\u00C9");
-  (?-i:&Ecirc;) tokt("\u00CA");
-  (?-i:&Euml;) tokt("\u00CB");
-  (?-i:&Igrave;) tokt("\u00CC");
-  (?-i:&Iacute;) tokt("\u00CD");
-  (?-i:&Icirc;) tokt("\u00CE");
-  (?-i:&Iuml;) tokt("\u00CF");
-  (?-i:&ETH;) tokt("\u00D0");
-  (?-i:&Ntilde;) tokt("\u00D1");
-  (?-i:&Ograve;) tokt("\u00D2");
-  (?-i:&Oacute;) tokt("\u00D3");
-  (?-i:&Ocirc;) tokt("\u00D4");
-  (?-i:&Otilde;) tokt("\u00D5");
-  (?-i:&Ouml;) tokt("\u00D6");
-  (?-i:&times;) tokt("\u00D7");
-  (?-i:&Oslash;) tokt("\u00D8");
-  (?-i:&Ugrave;) tokt("\u00D9");
-  (?-i:&Uacute;) tokt("\u00DA");
-  (?-i:&Ucirc;) tokt("\u00DB");
-  (?-i:&Uuml;) tokt("\u00DC");
-  (?-i:&Yacute;) tokt("\u00DD");
-  (?-i:&THORN;) tokt("\u00DE");
-  (?-i:&szlig;) tokt("\u00DF");
-  (?-i:&agrave;) tokt("\u00E0");
-  (?-i:&aacute;) tokt("\u00E1");
-  (?-i:&acirc;) tokt("\u00E2");
-  (?-i:&atilde;) tokt("\u00E3");
-  (?-i:&auml;) tokt("\u00E4");
-  (?-i:&aring;) tokt("\u00E5");
-  (?-i:&aelig;) tokt("\u00E6");
-  (?-i:&ccedil;) tokt("\u00E7");
-  (?-i:&egrave;) tokt("\u00E8");
-  (?-i:&eacute;) tokt("\u00E9");
-  (?-i:&ecirc;) tokt("\u00EA");
-  (?-i:&euml;) tokt("\u00EB");
-  (?-i:&igrave;) tokt("\u00EC");
-  (?-i:&iacute;) tokt("\u00ED");
-  (?-i:&icirc;) tokt("\u00EE");
-  (?-i:&iuml;) tokt("\u00EF");
-  (?-i:&eth;) tokt("\u00F0");
-  (?-i:&ntilde;) tokt("\u00F1");
-  (?-i:&ograve;) tokt("\u00F2");
-  (?-i:&oacute;) tokt("\u00F3");
-  (?-i:&ocirc;) tokt("\u00F4");
-  (?-i:&otilde;) tokt("\u00F5");
-  (?-i:&ouml;) tokt("\u00F6");
-  (?-i:&divide;) tokt("\u00F7");
-  (?-i:&oslash;) tokt("\u00F8");
-  (?-i:&ugrave;) tokt("\u00F9");
-  (?-i:&uacute;) tokt("\u00FA");
-  (?-i:&ucirc;) tokt("\u00FB");
-  (?-i:&uuml;) tokt("\u00FC");
-  (?-i:&yacute;) tokt("\u00FD");
-  (?-i:&thorn;) tokt("\u00FE");
-  (?-i:&yuml;) tokt("\u00FF");
-  (?-i:&OElig;) tokt("\u0152");
-  (?-i:&oelig;) tokt("\u0153");
-  (?-i:&Scaron;) tokt("\u0160");
-  (?-i:&scaron;) tokt("\u0161");
-  (?-i:&Yuml;) tokt("\u0178");
-  (?-i:&fnof;) tokt("\u0192");
-  (?-i:&circ;) tokt("\u02C6");
-  (?-i:&tilde;) tokt("\u02DC");
-  (?-i:&Alpha;) tokt("\u0391");
-  (?-i:&Beta;) tokt("\u0392");
-  (?-i:&Gamma;) tokt("\u0393");
-  (?-i:&Delta;) tokt("\u0394");
-  (?-i:&Epsilon;) tokt("\u0395");
-  (?-i:&Zeta;) tokt("\u0396");
-  (?-i:&Eta;) tokt("\u0397");
-  (?-i:&Theta;) tokt("\u0398");
-  (?-i:&Iota;) tokt("\u0399");
-  (?-i:&Kappa;) tokt("\u039A");
-  (?-i:&Lambda;) tokt("\u039B");
-  (?-i:&Mu;) tokt("\u039C");
-  (?-i:&Nu;) tokt("\u039D");
-  (?-i:&Xi;) tokt("\u039E");
-  (?-i:&Omicron;) tokt("\u039F");
-  (?-i:&Pi;) tokt("\u03A0");
-  (?-i:&Rho;) tokt("\u03A1");
-  (?-i:&Sigma;) tokt("\u03A3");
-  (?-i:&Tau;) tokt("\u03A4");
-  (?-i:&Upsilon;) tokt("\u03A5");
-  (?-i:&Phi;) tokt("\u03A6");
-  (?-i:&Chi;) tokt("\u03A7");
-  (?-i:&Psi;) tokt("\u03A8");
-  (?-i:&Omega;) tokt("\u03A9");
-  (?-i:&alpha;) tokt("\u03B1");
-  (?-i:&beta;) tokt("\u03B2");
-  (?-i:&gamma;) tokt("\u03B3");
-  (?-i:&delta;) tokt("\u03B4");
-  (?-i:&epsilon;) tokt("\u03B5");
-  (?-i:&zeta;) tokt("\u03B6");
-  (?-i:&eta;) tokt("\u03B7");
-  (?-i:&theta;) tokt("\u03B8");
-  (?-i:&iota;) tokt("\u03B9");
-  (?-i:&kappa;) tokt("\u03BA");
-  (?-i:&lambda;) tokt("\u03BB");
-  (?-i:&mu;) tokt("\u03BC");
-  (?-i:&nu;) tokt("\u03BD");
-  (?-i:&xi;) tokt("\u03BE");
-  (?-i:&omicron;) tokt("\u03BF");
-  (?-i:&pi;) tokt("\u03C0");
-  (?-i:&rho;) tokt("\u03C1");
-  (?-i:&sigmaf;) tokt("\u03C2");
-  (?-i:&sigma;) tokt("\u03C3");
-  (?-i:&tau;) tokt("\u03C4");
-  (?-i:&upsilon;) tokt("\u03C5");
-  (?-i:&phi;) tokt("\u03C6");
-  (?-i:&chi;) tokt("\u03C7");
-  (?-i:&psi;) tokt("\u03C8");
-  (?-i:&omega;) tokt("\u03C9");
-  (?-i:&thetasym;) tokt("\u03D1");
-  (?-i:&upsih;) tokt("\u03D2");
-  (?-i:&piv;) tokt("\u03D6");
-  (?-i:&ensp;) tokt("\u2002");
-  (?-i:&emsp;) tokt("\u2003");
-  (?-i:&thinsp;) tokt("\u2009");
-  (?-i:&zwnj;) tokt("\u200C");
-  (?-i:&zwj;) tokt("\u200D");
-  (?-i:&lrm;) tokt("\u200E");
-  (?-i:&rlm;) tokt("\u200F");
-  (?-i:&ndash;) tokt("\u2013");
-  (?-i:&mdash;) tokt("\u2014");
-  (?-i:&lsquo;) tokt("\u2018");
-  (?-i:&rsquo;) tokt("\u2019");
-  (?-i:&sbquo;) tokt("\u201A");
-  (?-i:&ldquo;) tokt("\u201C");
-  (?-i:&rdquo;) tokt("\u201D");
-  (?-i:&bdquo;) tokt("\u201E");
-  (?-i:&dagger;) tokt("\u2020");
-  (?-i:&Dagger;) tokt("\u2021");
-  (?-i:&bull;) tokt("\u2022");
-  (?-i:&hellip;) tokt("\u2026");
-  (?-i:&permil;) tokt("\u2030");
-  (?-i:&prime;) tokt("\u2032");
-  (?-i:&Prime;) tokt("\u2033");
-  (?-i:&lsaquo;) tokt("\u2039");
-  (?-i:&rsaquo;) tokt("\u203A");
-  (?-i:&oline;) tokt("\u203E");
-  (?-i:&frasl;) tokt("\u2044");
-  (?-i:&euro;) tokt("\u20AC");
-  (?-i:&image;) tokt("\u2111");
-  (?-i:&weierp;) tokt("\u2118");
-  (?-i:&real;) tokt("\u211C");
-  (?-i:&trade;) tokt("\u2122");
-  (?-i:&alefsym;) tokt("\u2135");
-  (?-i:&larr;) tokt("\u2190");
-  (?-i:&uarr;) tokt("\u2191");
-  (?-i:&rarr;) tokt("\u2192");
-  (?-i:&darr;) tokt("\u2193");
-  (?-i:&harr;) tokt("\u2194");
-  (?-i:&crarr;) tokt("\u21B5");
-  (?-i:&lArr;) tokt("\u21D0");
-  (?-i:&uArr;) tokt("\u21D1");
-  (?-i:&rArr;) tokt("\u21D2");
-  (?-i:&dArr;) tokt("\u21D3");
-  (?-i:&hArr;) tokt("\u21D4");
-  (?-i:&forall;) tokt("\u2200");
-  (?-i:&part;) tokt("\u2202");
-  (?-i:&exist;) tokt("\u2203");
-  (?-i:&empty;) tokt("\u2205");
-  (?-i:&nabla;) tokt("\u2207");
-  (?-i:&isin;) tokt("\u2208");
-  (?-i:&notin;) tokt("\u2209");
-  (?-i:&ni;) tokt("\u220B");
-  (?-i:&prod;) tokt("\u220F");
-  (?-i:&sum;) tokt("\u2211");
-  (?-i:&minus;) tokt("\u2212");
-  (?-i:&lowast;) tokt("\u2217");
-  (?-i:&radic;) tokt("\u221A");
-  (?-i:&prop;) tokt("\u221D");
-  (?-i:&infin;) tokt("\u221E");
-  (?-i:&ang;) tokt("\u2220");
-  (?-i:&and;) tokt("\u2227");
-  (?-i:&or;) tokt("\u2228");
-  (?-i:&cap;) tokt("\u2229");
-  (?-i:&cup;) tokt("\u222A");
-  (?-i:&int;) tokt("\u222B");
-  (?-i:&there4;) tokt("\u2234");
-  (?-i:&sim;) tokt("\u223C");
-  (?-i:&cong;) tokt("\u2245");
-  (?-i:&asymp;) tokt("\u2248");
-  (?-i:&ne;) tokt("\u2260");
-  (?-i:&equiv;) tokt("\u2261");
-  (?-i:&le;) tokt("\u2264");
-  (?-i:&ge;) tokt("\u2265");
-  (?-i:&sub;) tokt("\u2282");
-  (?-i:&sup;) tokt("\u2283");
-  (?-i:&nsub;) tokt("\u2284");
-  (?-i:&sube;) tokt("\u2286");
-  (?-i:&supe;) tokt("\u2287");
-  (?-i:&oplus;) tokt("\u2295");
-  (?-i:&otimes;) tokt("\u2297");
-  (?-i:&perp;) tokt("\u22A5");
-  (?-i:&sdot;) tokt("\u22C5");
-  (?-i:&lceil;) tokt("\u2308");
-  (?-i:&rceil;) tokt("\u2309");
-  (?-i:&lfloor;) tokt("\u230A");
-  (?-i:&rfloor;) tokt("\u230B");
-  (?-i:&lang;) tokt("\u2329");
-  (?-i:&rang;) tokt("\u232A");
-  (?-i:&loz;) tokt("\u25CA");
-  (?-i:&spades;) tokt("\u2660");
-  (?-i:&clubs;) tokt("\u2663");
-  (?-i:&hearts;) tokt("\u2665");
-  (?-i:&diams;) tokt("\u2666");
-
-  /* awesome entities */
-  (?-i:&cloud;) tokt("\u2601");
-  (?-i:&umbrella;) tokt("\u2602");
-  (?-i:&snowman;) tokt("\u2603");
-  (?-i:&snowflake;) tokt("\u2745");
-  (?-i:&comet;) tokt("\u2604");
-  (?-i:&thunderstorm;) tokt("\u2608");
-
-  /* pseudo entities */
-  ' tokt("\\'");
-  "\\" tokt("\\\\");
-
-  /* meta entities */
-  (?-i:&#[0-9]+;) {
-    char buf[5];
-    utf8ize(atoi(yytext + 2), buf);
-    tokt(buf);
-  }
-  (?-i:&#x)[A-F0-9]+; {
-    char buf[5];
-    char *_;
-    utf8ize(strtol(yytext + 3, &_, 16), buf);
-    tokt(buf);
-  }
-
-  /* not entities */
-  & {
-    yymore();
-    BEGIN(ST_XHP_INVALID_ENTITY);
-  }
-}
-
-<ST_XHP_INVALID_ENTITY>{
-  {ANY_CHAR}{1,10} {
-    for (char* ii = yytext; *ii; ++ii) {
-      if (*ii == ';') {
-        ii[1] = 0;
-        break;
-      }
-    }
-    if (!yyextra->terminated) {
-      yyextra->error = string("Invalid entity: (") + yytext + ")";
-      yyextra->terminated = true;
-    }
-  }
-}
-
-<ST_XHP_AFTER_ENT>{
-  [ \t\x0b\x0c\xa0\r\n]|\r\n {
-    if (*yytext == '\r' || *yytext == '\n') {
-      // Since we rewrite newlines into space we need to increment both line
-      // counters. The first_lineno increment is quite a hack, and makes it so
-      // that this ent is on the wrong line but it doesn't mess up the rest of
-      // the file.
-      ++yyextra->lineno;
-      ++yyextra->first_lineno;
-    }
-    pop_state();
-    yytext[0] = ' ';
-    yytext[1] = 0;
-    tok(T_XHP_TEXT);
-  }
-  . {
-    pop_state();
-    yyless(0);
-  }
-}
-
 <ST_XHP_CHILD>{
-  [^&'<>\\{ \t\x0b\x0c\xa0\r\n]+{WHITESPACE}? {
+  [^{<]+ {
     yy_scan_newlines(yytext, yyg);
-    // Crunch white space at the end
-    char* ii = yytext + yyleng - 1;
-    while (*ii == ' ' || *ii == '\t' || *ii == '\n' || *ii == '\r') {
-      --ii;
+    tok_consume();
+    if (!yylval->htmlTrim()) {
+      YY_BREAK;
     }
-   if (ii != yytext + yyleng - 1) {
-      ii[1] = ' ';
-      ii[2] = 0;
-    }
-    tok(T_XHP_TEXT);
+    yylval->xhpDecode();
+    tok_return(T_XHP_TEXT);
   }
-  {WHITESPACE}* {
-    yy_scan_newlines(yytext, yyg);
-    yytext[0] = ' ';
-    yytext[1] = 0;
-    tok(T_XHP_TEXT);
-  }
-  {WHITESPACE}*"{" {
+  "{" {
     push_state(ST_PHP);
     tok('{');
   }
-  {WHITESPACE}*"<" {
+  "<" {
     yy_scan_newlines(yytext, yyg);
     push_state(ST_XHP_IN_TAG);
     tok(T_XHP_TAG_LT);
   }
-  {WHITESPACE}*"</" {
+  "</" {
     BEGIN(ST_XHP_END_CLOSE_TAG);
     yyless(yyleng - 1);
     tok(T_XHP_TAG_LT);
@@ -1122,21 +763,22 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   ">" { pop_state(); tok(T_XHP_TAG_GT); }
 }
 
-<ST_XHP_CHILD>[ \n\r\t]*"<!--" {
+<ST_XHP_CHILD>"<!--" {
   push_state(ST_XHP_COMMENT);
   yymore();
 }
 
-<ST_XHP_COMMENT>[^-]+ {
-  yymore();
-}
-
-<ST_XHP_COMMENT>"-->"[ \n\r\t]* {
-  pop_state();
-}
-
-<ST_XHP_COMMENT>"-" {
-  yymore();
+<ST_XHP_COMMENT>{
+  [^-]+ {
+    yymore();
+  }
+  "-->" {
+    pop_state();
+    tok(T_COMMENT);
+  }
+  "-" {
+    yymore();
+  }
 }
 
  /* Other */
@@ -1174,12 +816,8 @@ static const char* yy_state_name(int state) {
       return "ST_PHP_NO_RESERVED_WORDS";
     case ST_PHP_NO_RESERVED_WORDS_PERSIST:
       return "ST_PHP_NO_RESERVED_WORDS_PERSIST";
-    case ST_XHP_AFTER_ENT:
-      return "ST_XHP_AFTER_ENT";
     case ST_XHP_CHILD:
       return "ST_XHP_CHILD";
-    case ST_XHP_INVALID_ENTITY:
-      return "ST_XHP_INVALID_ENTITY";
     case ST_XHP_ATTR_TYPE_DECL:
       return "ST_XHP_ATTR_TYPE_DECL";
     case XHP_CHILDREN_DECL:

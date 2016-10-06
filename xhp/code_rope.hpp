@@ -41,6 +41,8 @@ class code_rope {
 
     void replaceAll(const char *find, const char *rep);
     void xhpLabel(bool global_ns = true);
+    bool htmlTrim();
+    void xhpDecode();
 
   friend code_rope operator+(const char*, const code_rope&);
 };
