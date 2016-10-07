@@ -1972,7 +1972,7 @@ xhp_attribute:
 
 xhp_attribute_value:
   T_XHP_TEXT {
-    $$ = "\"" + $1 + "\"";
+    $$ = $1;
   }
 | '{' expr '}' {
     $$ = $2;

@@ -696,8 +696,8 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
     tok(yytext[0]);
   }
   ["][^"]*["] {
-    yytext++; yyleng--;
-    yytext[yyleng-1] = 0; // skipping "quote"
+    // Need not to skipp the quite:
+    // yytext++; yyleng--; yytext[yyleng-1] = 0; // skipping "quote"
     tok_consume();
     yylval->xhpDecode();
     tok_return(T_XHP_TEXT);
