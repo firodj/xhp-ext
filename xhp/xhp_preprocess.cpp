@@ -114,7 +114,7 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
   char *code_str;
   size_t lineno, oldlineno=0;
 
-  int64_t tok;
+  int tok;
   while ((tok = xhp_lex(code_str, lineno, lex_state))) {
     stringstream ss;
 
@@ -124,7 +124,7 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
     }
 
     if (tok >= 256) {
-        ss << "[" << yytokname(tok) << "]";
+        ss << "[" << tok << ":" << yytokname(tok) << "]";
         ss << code_str;
     } else {
         if (tok >= 20 && tok <= 126) {
@@ -168,12 +168,12 @@ public:
   yy_extra_type extra;
 };
 
-int64_t
+int
 xhp_lex(char* &code_str, size_t &lineno, void *lex_state)
 {
   xhp_lex_state_t *l = static_cast<xhp_lex_state_t*>(lex_state);
   if (l) {
-    int64_t tok = xhplex(&l->new_code, l->scanner);
+    int tok = xhplex(&l->new_code, l->scanner);
     lineno = l->extra.lineno;
     if (tok) {
       code_str = (char*)l->new_code.c_str();

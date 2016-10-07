@@ -36,6 +36,7 @@ class yy_extra_type {
       expecting_xhp_class_statements = false;
       hh_tags = false;
       return_all_tokens = false;
+      insert_token = 0;
       pushStack();
     }
 

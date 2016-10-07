@@ -784,6 +784,7 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
  /* Other */
 <*>{ANY_CHAR} {
   tok(yytext[0]);
+
   // fix unused function warnings
   yy_top_state(NULL);
   yyunput(0, 0, NULL);
