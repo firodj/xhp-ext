@@ -22,4 +22,4 @@ echo
   </x>;
 echo <x> <!-- Comment with some -- extras dashes --> </x>;
 --EXPECT--
-<x></x><x></x><x> a b <x> cd </x></x><x></x>
+<x></x><x></x><x> a  b <x> cd </x></x><x></x>

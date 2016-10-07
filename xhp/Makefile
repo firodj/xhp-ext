@@ -36,16 +36,16 @@ xhp_preprocess.o: xhp_preprocess.cpp scanner.lex.hpp parser.yacc.hpp
 parser.yacc.o: scanner.lex.hpp
 scanner.lex.o: parser.yacc.hpp
 
-libxhp.a: code_rope.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
+libxhp.a: code_rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
 	$(AR) -crs $@ $^
 
-libxhp.so: code_rope.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
+libxhp.so: code_rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
 	g++ -shared -Wl,-soname,libxhp.so -o libxhp.so $^
 
 xhpize: xhpize.cpp libxhp.a
 	g++ $(CPPFLAGS) -o $@ $^
 
-rope_test: rope_test.cpp code_rope.o
+rope_test: rope_test.cpp code_rope.o rope_entity.o
 	g++ $(CPPFLAGS) -o $@ $^
 
 .PHONY: all clean tags
