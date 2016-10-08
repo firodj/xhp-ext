@@ -269,7 +269,7 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
     zend_string *str;
 
     // Create another tmp zval with the rewritten PHP code and pass it to the original function
-    
+
     str = zend_string_init(const_cast<char*>(rewrit.c_str()), rewrit.size(), 0);
     ZVAL_STR(&tmp, str);
 
@@ -584,6 +584,49 @@ PHP_FUNCTION(xhp_token_name) {
   RETVAL_STRING(xhp_get_token_type_name(type));
 }
 
+// xhp_rename_function
+PHP_FUNCTION(xhp_rename_function)
+{
+  zend_string *orig_fname, *new_fname;
+  zval *func;
+
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &orig_fname, &new_fname) == FAILURE) {
+    return;
+  }
+
+  func = zend_hash_find(EG(function_table), orig_fname);
+  if (func == NULL) {
+    zend_error(E_WARNING, "%s() failed: original '%s' does not exist!",
+                 get_active_function_name(TSRMLS_C),ZSTR_VAL(orig_fname));
+    RETURN_FALSE;
+  }
+
+  // zend_error(E_WARNING, "name: %s", ZSTR_VAL(Z_FUNC_P(func)->common.function_name));
+
+  if (zend_hash_exists(EG(function_table), new_fname)) {
+    zend_error(E_WARNING, "%s() failed: new '%s' already exist!",
+                 get_active_function_name(TSRMLS_C),ZSTR_VAL(new_fname));
+    RETURN_FALSE;
+  }
+
+  if (zend_hash_add(EG(function_table), new_fname, func) == NULL) {
+    zend_error(E_WARNING, "%s() failed to insert '%s' into function table",
+                 get_active_function_name(TSRMLS_C), ZSTR_VAL(new_fname));
+    RETURN_FALSE;
+  }
+
+  if(zend_hash_del(EG(function_table), orig_fname) == FAILURE) {
+    zend_error(E_WARNING, "%s() failed to remove '%s' from function table",
+              get_active_function_name(TSRMLS_C),
+              ZSTR_VAL(orig_fname));
+
+    zend_hash_del(EG(function_table), new_fname);
+    RETURN_FALSE;
+  }
+
+  RETURN_TRUE;
+}
+
 //
 // Module description
 zend_function_entry xhp_functions[] = {
@@ -591,6 +634,7 @@ zend_function_entry xhp_functions[] = {
   ZEND_FE(xhp_preprocess_code, NULL)
   PHP_FE(xhp_token_get_all, NULL)
   PHP_FE(xhp_token_name, NULL)
+  PHP_FE(xhp_rename_function, NULL)
   {NULL, NULL, NULL}
 };
 
