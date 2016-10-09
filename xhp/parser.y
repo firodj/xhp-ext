@@ -170,6 +170,7 @@ static void replacestr(string &source, const string &find, const string &rep) {
 %token T_CLOSE_TAG 381
 %token T_WHITESPACE 382
 %token T_HEREDOC
+%token T_CURLY_OPEN 386
 %token T_DOLLAR_OPEN_CURLY_BRACES 385
 %token T_PAAMAYIM_NEKUDOTAYIM 387
 %token T_NAMESPACE 388
@@ -1477,6 +1478,9 @@ scalar:
     $$ = $1 + $2;
   }
 | common_scalar
+| '"' encaps_list '"' {
+    $$ = $1 + $2 + $3;
+  }
 ;
 
 static_array_pair_list:
@@ -1715,6 +1719,31 @@ non_empty_array_pair_list:
   }
 | '&' w_variable {
     $$ = $1 + $2;
+  }
+;
+
+
+encaps_list:
+  T_ENCAPSED_AND_WHITESPACE {
+    $$ = $1;
+  }
+| encaps_list T_ENCAPSED_AND_WHITESPACE {
+    $$ = $1 + $2;
+  }
+| encaps_list encaps_var {
+    $$ = $1 + $2;
+  }
+| encaps_var {
+    $$ = $1;
+  }
+;
+
+encaps_var:
+  T_VARIABLE {
+    $$ = $1;
+  }
+| T_CURLY_OPEN variable '}' {
+    $$ = $1 + $2 + $3;
   }
 ;
 

@@ -211,6 +211,7 @@ static bool shouldReturnToken(int t, bool force)
 %x ST_LT_CHECK
 %x ST_LOOKING_FOR_COLON
 %x ST_XHP_END_CLOSE_TAG
+%x ST_DOUBLE_QUOTES
 
 %option prefix="xhp"
 %option reentrant
@@ -238,7 +239,8 @@ DNUM ([0-9]*"."[0-9]+)|([0-9]+"."[0-9]*)
 EXPONENT_DNUM (({LNUM}|{DNUM})[eE][+-]?{LNUM})
 HNUM "0x"[0-9a-fA-F]+
 BNUM "0b"[01]+
-LABEL [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
+LABEL_START [a-zA-Z_\x7f-\xff]
+LABEL {LABEL_START}[a-zA-Z0-9_\x7f-\xff]*
 ANY_CHAR (.|[\n])
 WHITESPACE [ \n\r\t]+
 TOKENS [;:,.\[\])|^&+\-*/=%!~$<>?@]
@@ -247,6 +249,24 @@ NEWLINE ("\r\n"|"\n"|"\r")
 XHPLABEL {LABEL}([:-]{LABEL})*
 COMMENT_REGEX ("/*"([^\*]|("*"[^/]))*"*/"|("//"|"#")[^\r\n]*{NEWLINE})
 WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
+
+/*
+ * LITERAL_DOLLAR matches unescaped $ that aren't followed by a label character
+ * or a { and therefore will be taken literally. The case of literal $ before
+ * a variable or "${" is handled in a rule for each string type
+ */
+DOUBLE_QUOTES_LITERAL_DOLLAR ("$"+([^a-zA-Z_\x7f-\xff$\"\\{]|("\\"{ANY_CHAR})))
+BACKQUOTE_LITERAL_DOLLAR     ("$"+([^a-zA-Z_\x7f-\xff$`\\{]|("\\"{ANY_CHAR})))
+/*
+ * CHARS matches everything up to a variable or "{$"
+ * {'s are matched as long as they aren't followed by a $
+ * The case of { before "{$" is handled in a rule for each string type
+ *
+ * For heredocs, matching continues across/after newlines if/when it's known
+ * that the next line doesn't contain a possible ending label
+ */
+DOUBLE_QUOTES_CHARS ("{"*([^$\"\\{]|("\\"{ANY_CHAR}))|{DOUBLE_QUOTES_LITERAL_DOLLAR})
+BACKQUOTE_CHARS     ("{"*([^$`\\{]|("\\"{ANY_CHAR}))|{BACKQUOTE_LITERAL_DOLLAR})
 
 %%
 
@@ -542,12 +562,27 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
 }
 
  /* Scalars (parsing these doesn't really matter since we just pass them through literally) */
-<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL>{
-  {LABEL} tok(T_STRING);
-  "$"{LABEL} tok(T_VARIABLE);
+ /*
   b?'(\\.|\\\n|[^\\']+)*'|b?\"(\\.|\\\n|[^\\\"]+)*\" {
     yy_scan_newlines(yytext, yyg);
     tok(T_CONSTANT_ENCAPSED_STRING);
+  }
+  */
+<ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST,ST_XHP_ATTR_TYPE_DECL>{
+  {LABEL} tok(T_STRING);
+  "$"{LABEL} tok(T_VARIABLE);
+  (b?[\"]{DOUBLE_QUOTES_CHARS}*("{"*|"$"*)[\"]) {
+    yy_scan_newlines(yytext, yyg);
+    tok(T_CONSTANT_ENCAPSED_STRING);
+  }
+  (b?[\']([^\'\\]|("\\"{ANY_CHAR}))*[\']?) {
+    int closed = (yytext[yyleng - 1] == '\'');
+    tok(closed ? T_CONSTANT_ENCAPSED_STRING : T_ENCAPSED_AND_WHITESPACE);
+  }
+  b?[\"] {
+    int bprefix = (yytext[0] != '"') ? 1 : 0;
+    push_state(ST_DOUBLE_QUOTES);
+    tok('"');
   }
   `[^`]*` {
     yy_scan_newlines(yytext, yyg);
@@ -621,6 +656,41 @@ WHITESPACE_AND_COMMENTS ([ \n\r\t]|({COMMENT_REGEX}))+
   BEGIN(ST_PHP);
   tok('<');
 }
+
+ /* Double Quotes */
+<ST_DOUBLE_QUOTES>{
+  "${" {
+    yymore();
+  }
+  "$$"/[^a-zA-Z_\x7f-\xff${] {
+    yymore();
+  }
+  "$"{LABEL} {
+    yymore();
+  }
+  "{$"{LABEL}"->:"{LABEL_START} {
+    yyless(1);
+    push_state(ST_PHP);
+    tok(T_CURLY_OPEN);
+  }
+  "{$" {
+    yymore();
+  }
+  {DOUBLE_QUOTES_CHARS}+ {
+    yy_scan_newlines(yytext, yyg);
+    tok(T_ENCAPSED_AND_WHITESPACE);
+  }
+  {DOUBLE_QUOTES_CHARS}*("{"{2,}|"$"{2,}|(("{"+|"$"+)[\"])) {
+    yy_scan_newlines(yytext, yyg);
+    yyless(yyleng - 1);
+    tok(T_ENCAPSED_AND_WHITESPACE);
+  }
+  [\"] {
+    pop_state();
+    tok('"');
+  }
+}
+
 
  /* (HERE|NOW)DOC's */
 <ST_PHP,ST_PHP_NO_RESERVED_WORDS,ST_PHP_NO_RESERVED_WORDS_PERSIST>b?"<<<"{TABS_AND_SPACES} {
