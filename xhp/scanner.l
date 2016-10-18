@@ -381,8 +381,8 @@ BACKQUOTE_CHARS     ("{"*([^$`\\{]|("\\"{ANY_CHAR}))|{BACKQUOTE_LITERAL_DOLLAR})
   [^*\r\n]+|"*" yymore();
 }
 <ST_PHP_DOC_COMMENT>"*/" {
-  //yyextra->doc_block = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno);
-  //yyextra->has_doc_block = true;
+  yyextra->doc_block = code_rope(yytext, yyextra->first_lineno, yyextra->lineno - yyextra->first_lineno);
+  yyextra->has_doc_block = true;
   pop_state();
   tok(T_DOC_COMMENT);
 }
@@ -947,7 +947,14 @@ static int yy_token(int tok, yyguts_t* yyg) {
 #ifdef DEBUG
   yy_log_token(tok);
 #endif
-  if (shouldReturnToken(tok, false)) yyextra->last_token = tok;
+  if (shouldReturnToken(tok, false)) {
+    yyextra->last_token = tok;
+
+    if (yyextra->has_doc_block) {
+      *yylval = yyextra->doc_block + *yylval;
+      yyextra->has_doc_block = false;
+    }
+  }
   return tok;
 }
 
