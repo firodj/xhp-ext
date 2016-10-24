@@ -891,7 +891,7 @@ static const char* yy_state_name(int state) {
       return "ST_XHP_CHILD";
     case ST_XHP_ATTR_TYPE_DECL:
       return "ST_XHP_ATTR_TYPE_DECL";
-    case XHP_CHILDREN_DECL:
+    case ST_XHP_CHILDREN_DECL:
       return "XHP_CHILDREN_DECL";
     case ST_XHP_COMMENT:
       return "ST_XHP_COMMENT";

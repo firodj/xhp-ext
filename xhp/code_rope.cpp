@@ -174,11 +174,12 @@ bool code_rope::htmlTrim() {
     str.erase(q0.base(), q00.base()+1);
   }
 
-  /* find multiple sequences of spaces */
+  /* find multiple sequences of spaces in the middle */
   for (q0 = str.mutable_rbegin()+1; q0 != str.mutable_rend(); ++q0) {
     if (isspace(*q0)) {
       q1 = q0+1;
-      while (isspace(*q1)) ++q1;
+      while ((q1 != str.mutable_rend()) && isspace(*q1)) ++q1;
+
       *--q1 = ' ';
       q0 = _rope_t::reverse_iterator( str.erase(q1.base(), q0.base()) );
     }
