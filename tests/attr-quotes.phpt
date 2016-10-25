@@ -2,7 +2,7 @@
 Quotes in attribute
 --FILE--
 <?php
-require 'lib.php';
+require 'xhp_x.php';
 $quote = '"';
 echo <x b={$quote}>c</x>;
 --EXPECT--

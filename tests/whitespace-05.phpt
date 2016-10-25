@@ -2,7 +2,7 @@
 Whitespace 05
 --FILE--
 <?php
-require 'lib.php';
+require 'xhp_x.php';
 echo
   <x>
     foo
