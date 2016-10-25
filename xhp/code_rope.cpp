@@ -38,16 +38,7 @@ code_rope::code_rope(const code_rope& str, const size_t no /* = 0 */, const size
 }
 
 const char* code_rope::c_str() const {
-  if (0 && this->no > 1) {
-    return NULL;
-    // lolololololol
-    // this code is clowntown -- returns dealloced memory
-    _rope_t whitespace(this->no - 1, '\n');
-    whitespace += this->str;
-    return whitespace.c_str();
-  } else {
     return this->str.c_str();
-  }
 }
 
 void code_rope::prepend(const char* pre_str) {
