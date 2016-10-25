@@ -11,7 +11,15 @@ class :x {
     $this->tagName = static::class2element(get_class($this));
   }
 
-  public function __toString() {
+  final public function __toString() {
+    try {
+      return $this->toString();
+    } catch (\Exception $error) {
+      trigger_error($error->getMessage(), E_USER_ERROR);
+    }
+  }
+
+  public function toString() {
     $head = '<'.$this->tagName;
     foreach ($this->attrs as $key => $val) {
       $head .= ' '.htmlspecialchars($key).'="'.htmlspecialchars($val, ENT_QUOTES).'"';
