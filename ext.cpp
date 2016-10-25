@@ -125,7 +125,7 @@ long xhp_stream_fteller(xhp_stream_t* handle TSRMLS_DC) {
 // PHP compilation intercepter
 static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) {
 
-  if (open_file_for_scanning(f TSRMLS_CC) == FAILURE) {
+  if (!f || open_file_for_scanning(f TSRMLS_CC) == FAILURE) {
     // If opening the file fails just send it to the original func
     return dist_compile_file(f, type TSRMLS_CC);
   }
@@ -186,37 +186,25 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
 
   // Create a fake file to give back to PHP to handle
   zend_file_handle fake_file;
+  memset(&fake_file, 0, sizeof(zend_file_handle));
+
+  fake_file.type = ZEND_HANDLE_MAPPED;
+
   fake_file.opened_path = f->opened_path ? zend_string_dup(f->opened_path, 0) : NULL;
   fake_file.filename = f->filename;
   fake_file.free_filename = false;
 
-#if PHP_VERSION_ID >= 50300
   fake_file.handle.stream.isatty = 0;
   fake_file.handle.stream.mmap.pos = 0;
   fake_file.handle.stream.mmap.buf = const_cast<char*>(code_to_give_to_php->c_str());
   fake_file.handle.stream.mmap.len = code_to_give_to_php->size();
   fake_file.handle.stream.closer = NULL;
-  fake_file.type = ZEND_HANDLE_MAPPED;
-#else
-  // This code works fine in PHP 5.3, but the mmap method is faster
-  xhp_stream_t stream_handle;
-  stream_handle.str = code_to_give_to_php->c_str();
-  stream_handle.pos = 0;
-  stream_handle.len = code_to_give_to_php->size();
 
-  fake_file.type = ZEND_HANDLE_STREAM;
-  fake_file.handle.stream.handle = &stream_handle;
-  fake_file.handle.stream.reader = (zend_stream_reader_t)&xhp_stream_reader;
-#if PHP_VERSION_ID >= 50300
-  fake_file.handle.stream.fsizer = (zend_stream_fsizer_t)&xhp_stream_fteller;
-#else
-  fake_file.handle.stream.fteller = (zend_stream_fteller_t)&xhp_stream_fteller;
-#endif
-  fake_file.handle.stream.closer = NULL;
-  fake_file.handle.stream.interactive = 0;
-#endif
-
+  // TODO: should check for bailout
   zend_op_array* ret = dist_compile_file(&fake_file, type TSRMLS_CC);
+
+  zend_file_handle_dtor(&fake_file);
+
   return ret;
 }
 
