@@ -62,9 +62,10 @@ bool xhp_fastpath(const char* yy, const size_t len, const xhp_flags_t &flags) {
       state = PHP;
       continue;
     }
-    <HTML> '<?php'[ \t]'// xhp' {
+    <HTML> '<?php'[ \t]'//'[ ]?'xhp' {
       state = PHP;
-      continue;
+      result = true;
+      break;
     }
     <HTML> '<?hh'([ \t]|NEWLINE) {
       state = PHP;

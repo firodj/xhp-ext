@@ -326,7 +326,7 @@ PHP_INI_BEGIN()
   STD_PHP_INI_BOOLEAN("xhp.idx_expr", "0", PHP_INI_PERDIR, OnUpdateBool, idx_expr, zend_xhp_globals, xhp_globals)
   STD_PHP_INI_BOOLEAN("xhp.include_debug", "1", PHP_INI_PERDIR, OnUpdateBool, include_debug, zend_xhp_globals, xhp_globals)
   STD_PHP_INI_BOOLEAN("xhp.force_global_namespace", "1", PHP_INI_PERDIR, OnUpdateBool, force_global_namespace, zend_xhp_globals, xhp_globals)
-  STD_PHP_INI_BOOLEAN("xhp.moderate_parse", "0", PHP_INI_PERDIR, OnUpdateBool, moderate_parse, zend_xhp_globals, xhp_globals)
+  STD_PHP_INI_BOOLEAN("xhp.moderate_parse", "1", PHP_INI_PERDIR, OnUpdateBool, moderate_parse, zend_xhp_globals, xhp_globals)
 PHP_INI_END()
 
 //
