@@ -158,7 +158,7 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
   string* code_to_give_to_php;
 
   memset(&flags, 0, sizeof(xhp_flags_t));
-  flags.short_tags = CG(short_tags);
+  flags.short_tags = 0;
   flags.idx_expr = XHPG(idx_expr);
   flags.include_debug = XHPG(include_debug);
 #if PHP_VERSION_ID >= 50300
@@ -190,7 +190,7 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
 
   fake_file.type = ZEND_HANDLE_MAPPED;
 
-  fake_file.opened_path = f->opened_path ? zend_string_dup(f->opened_path, 0) : NULL;
+  fake_file.opened_path = f->opened_path ? zend_string_copy(f->opened_path) : NULL;
   fake_file.filename = f->filename;
   fake_file.free_filename = false;
 
@@ -230,7 +230,7 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
   xhp_flags_t flags;
 
   memset(&flags, 0, sizeof(xhp_flags_t));
-  flags.short_tags = CG(short_tags);
+  flags.short_tags = 0;
   flags.idx_expr = XHPG(idx_expr);
   flags.include_debug = XHPG(include_debug);
   flags.force_global_namespace = XHPG(force_global_namespace);
@@ -254,15 +254,11 @@ static zend_op_array* xhp_compile_string(zval* str, char *filename TSRMLS_DC) {
     CG(in_compilation) = original_in_compilation;
     return NULL;
   } else if (result == XHPRewrote) {
-    zend_string *str;
 
     // Create another tmp zval with the rewritten PHP code and pass it to the original function
-
-    str = zend_string_init(const_cast<char*>(rewrit.c_str()), rewrit.size(), 0);
-    ZVAL_STR(&tmp, str);
-
+    ZVAL_STRINGL(&tmp, rewrit.c_str(), rewrit.size());
     zend_op_array* ret = dist_compile_string(&tmp, filename TSRMLS_CC);
-    zend_string_free(str);
+    zval_dtor(&tmp);
     return ret;
   } else {
     return dist_compile_string(str, filename TSRMLS_CC);
@@ -341,6 +337,7 @@ static PHP_MINIT_FUNCTION(xhp) {
 
   REGISTER_INI_ENTRIES();
 
+#ifndef ZEND_ENGINE_3
   // APC has this crazy magic api you can use to avoid the race condition for when an extension overwrites
   // the compile_file function. The desired order here is APC -> XHP -> PHP, that way APC can cache the
   // file as usual.
@@ -351,7 +348,9 @@ static PHP_MINIT_FUNCTION(xhp) {
     zend_compile_file_t* (*apc_set_compile_file)(zend_compile_file_t*) = (zend_compile_file_t* (*)(zend_compile_file_t*))apc_magic->value.value.lval;
     dist_compile_file = apc_set_compile_file(NULL);
     apc_set_compile_file(xhp_compile_file);
-  } else {
+  } else
+#endif
+  {
     dist_compile_file = zend_compile_file;
     zend_compile_file = xhp_compile_file;
   }
