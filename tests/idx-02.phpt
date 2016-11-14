@@ -1,7 +1,7 @@
 --TEST--
 XHP idx Expression 02
 --FILE--
-<?php
+<?php //xhp
 class foo implements ArrayAccess {
   public function offsetExists($offset) { return true; }
   public function offsetGet($offset) { return $offset; }

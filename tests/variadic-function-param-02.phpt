@@ -5,7 +5,7 @@ Variadic Function Call 2
 if (version_compare(PHP_VERSION, '5.6', '<')) exit("Skip This test is for PHP 5.5 only.");
 ?>
 --FILE--
-<?php
+<?php //xhp
 class :x {
   public $value;
   public function getValue() { return $this->value; }

@@ -1,7 +1,7 @@
 --TEST--
 Whitespace 05
 --FILE--
-<?php
+<?php //xhp
 require 'xhp_x.php';
 echo
   <x>

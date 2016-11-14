@@ -1,7 +1,7 @@
 --TEST--
 XHP Comment Syntax
 --FILE--
-<?php
+<?php //xhp
 require 'xhp_x.php';
 echo <x><!--XML comment--></x>;
 echo

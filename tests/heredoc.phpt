@@ -1,7 +1,7 @@
 --TEST--
 Heredoc Fastpath
 --FILE--
-<?php
+<?php //xhp
 $foo = <<<EOF
 ?>
 EOF;
@@ -11,7 +11,7 @@ EOF;
 // nowdocs can parse.
 $d = '$';
 $code = <<<EOF
-<?php
+<?php //xhp
 {$d}foo = <<<'BAR'
 ?>
 BAR;

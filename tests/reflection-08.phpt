@@ -1,7 +1,7 @@
 --TEST--
 Reflection API 08
 --FILE--
-<?php
+<?php //xhp
 class foo {}
 /** a */ class /** b */ bar /** c */ extends /** d */ foo /** e */ {}
 $foo = new ReflectionClass('bar');

@@ -5,7 +5,7 @@ PHP5.5 Finally keyword
 if (version_compare(PHP_VERSION, '5.5', '<')) exit("Skip This test is for PHP 5.5 only.");
 ?>
 --FILE--
-<?php
+<?php //xhp
 try {
   echo '1';
   throw new Exception('e');

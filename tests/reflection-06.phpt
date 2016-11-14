@@ -1,7 +1,7 @@
 --TEST--
 Reflection API 06
 --FILE--
-<?php
+<?php //xhp
 class foo {
   /** a */ public /** b */ $bar /** c */;
 }

@@ -1,7 +1,7 @@
 --TEST--
 Stack Balance Fail
 --FILE--
-<?php
+<?php //xhp
 class xhp_x__y {}
 $a = <x:y attr={:tag::CONSTANT} />;
 function f() {}

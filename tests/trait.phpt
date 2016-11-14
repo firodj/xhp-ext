@@ -1,7 +1,7 @@
 --TEST--
 PHP5.4 Traits work
 --FILE--
-<?php
+<?php //xhp
 trait simple {
   function extra() { }
   public $var = 5;

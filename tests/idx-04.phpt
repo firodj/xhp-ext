@@ -1,7 +1,7 @@
 --TEST--
 XHP idx Expression 04
 --FILE--
-<?php
+<?php //xhp
 $string = 'foobar';
 
 @var_dump(__xhp_idx($string, 0));

@@ -1,7 +1,7 @@
 --TEST--
 Var/Mixed attribute parsing
 --FILE--
-<?php
+<?php //xhp
 class :foo {
   attribute
     var a,

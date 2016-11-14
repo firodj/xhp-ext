@@ -1,7 +1,7 @@
 --TEST--
 XHP attributes Declaration
 --FILE--
-<?php
+<?php //xhp
 class :foo {
   attribute
     string foo;

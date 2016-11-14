@@ -1,7 +1,7 @@
 --TEST--
 Float attribute parsing
 --FILE--
-<?php
+<?php //xhp
 class :foo {
   attribute
     float b;

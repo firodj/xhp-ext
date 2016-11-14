@@ -1,7 +1,7 @@
 --TEST--
 XHP ->: Syntax
 --FILE--
-<?php
+<?php //xhp
 
 class :thing {
   public function __construct($attributes) {

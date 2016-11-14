@@ -5,7 +5,7 @@ Anonymous Functions
 if (version_compare(PHP_VERSION, '5.2', '<')) exit("Skip This test is for PHP 5.3 only.");
 ?>
 --FILE--
-<?php
+<?php //xhp
 $one = 1;
 $func = function($two) use ($one) {
   return $one + $two;

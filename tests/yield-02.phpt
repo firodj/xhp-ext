@@ -5,7 +5,7 @@ PHP5.5 Yield keyword 02
 if (version_compare(PHP_VERSION, '5.5', '<')) exit("Skip This test is for PHP 5.5 only.");
 ?>
 --FILE--
-<?php
+<?php //xhp
 function yieldTest() {
   $a = 1;
   $b = 2;

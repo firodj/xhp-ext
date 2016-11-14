@@ -1,7 +1,7 @@
 --TEST--
 Logical Operator Whitespace
 --FILE--
-<?php
+<?php //xhp
 echo true xor false;
 if (0) echo <a />;
 --EXPECT--

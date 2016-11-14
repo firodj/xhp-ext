@@ -1,7 +1,7 @@
 --TEST--
 XHP idx Expression 03
 --FILE--
-<?php
+<?php //xhp
 $array = array();
 $array[0] = 'zero';
 $array['key'] = 'value';

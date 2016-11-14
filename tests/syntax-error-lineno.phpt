@@ -1,7 +1,7 @@
 --TEST--
 Syntax Error Line Number
 --FILE--
-<?php
+<?php //xhp
 $foo = xhp_preprocess_code('<?php
 $foo = <x><y></x>;
 

@@ -1,7 +1,7 @@
 --TEST--
 Apostrophe Fastpath
 --FILE--
-<?php
+<?php //xhp
 $foo = xhp_preprocess_code('<?php
 $foo = <div>Her\'s</div>;foo(\'\');');
 echo isset($foo['new_code']);

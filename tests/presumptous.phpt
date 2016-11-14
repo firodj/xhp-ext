@@ -1,7 +1,7 @@
 --TEST--
 Presumptous Closing Tags
 --FILE--
-<?php
+<?php //xhp
 class xhp_a {}
 $foo = <a><a><a>hi</a></></a>;
 echo "pass";
