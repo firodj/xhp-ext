@@ -461,12 +461,6 @@ unticked_statement:
 | T_GOTO T_STRING ';' {
     $$ = $1 + " " + $2 + $3;
   }
-| T_YIELD ';' {
-    $$ = $1 + $2;
-  }
-| yield_with_variable ';' {
-    $$ = $1 + $2;
-  }
 ;
 
 additional_catches:
@@ -943,15 +937,6 @@ trait_modifiers:
 | member_modifier
 ;
 
-yield_with_variable:
-  T_YIELD variable {
-    $$ = $1 + " " + $2;
-  }
-| T_YIELD variable T_DOUBLE_ARROW variable {
-    $$ = $1 + " " + $2 + $3 + $4;
-  }
-;
-
 method_body:
   ';' /* abstract method */
 | '{' inner_statement_list '}' {
@@ -1093,12 +1078,6 @@ expr_without_variable:
   }
 | variable '=' '&' new_expr {
     $$ = $1 + $2 + $3 + $4;
-  }
-| T_LIST '(' assignment_list ')' '=' '(' yield_with_variable ')' {
-    $$ = $1 + $2 + $3 + $4 + $5 + $6 + $7 + $8;
-  }
-| variable '=' '(' yield_with_variable ')' {
-    $$ = $1 + $2 + $3 + $4 + $5;
   }
 | new_expr {
     $$ = $1;
@@ -1294,6 +1273,13 @@ expr_without_variable:
 | T_BACKTICKS_EXPR
 | T_PRINT expr {
     $$ = $1 + " " + $2;
+  }
+| T_YIELD
+| T_YIELD expr {
+    $$ = $1 + " " + $2;
+  }
+| T_YIELD expr T_DOUBLE_ARROW expr {
+    $$ = $1 + " " + $2 + $3 + $4;
   }
 | function is_reference '(' parameter_list ')' lexical_vars return_type '{' inner_statement_list '}' {
     $$ = $1 + $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 + $10;
