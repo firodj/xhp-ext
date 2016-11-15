@@ -40,7 +40,7 @@ XHPResult xhp_preprocess(string &in, string &out, bool isEval, string &errDescri
   memset(&flags, 0, sizeof(xhp_flags_t));
   flags.eval = isEval;
   flags.short_tags = true;
-  flags.idx_expr = true;
+  flags.idx_expr = false;
   flags.include_debug = true;
   flags.force_global_namespace = true;
   flags.moderate_parse = false;
