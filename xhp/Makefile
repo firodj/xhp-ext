@@ -13,7 +13,7 @@ FLEX = `which flex35 2>/dev/null || which flex 2>/dev/null`
 all: libxhp.a libxhp.so
 
 clean:
-	-rm libxhp.a xhpize parser.yacc.cpp scanner.lex.cpp scanner.lex.hpp parser.yacc.output parser.yacc.hpp fastpath.cpp *.o 2>/dev/null
+	-rm libxhp.a xhpize parser.yacc.cpp scanner.lex.cpp scanner.lex.hpp parser.yacc.output parser.yacc.hpp fastpath.cpp version.h *.o 2>/dev/null
 
 parser.yacc.cpp: parser.y
 	bison --debug --verbose -d -o $@ $<
@@ -42,7 +42,10 @@ libxhp.a: code_rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_p
 libxhp.so: code_rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
 	g++ -shared -Wl,-soname,libxhp.so -o libxhp.so $^
 
-xhpize: xhpize.cpp libxhp.a
+version.h:
+	echo "#define XHPIZE_VERSION \""`git show -s --format="%h - %ci" HEAD`"\"" >> version.h
+
+xhpize: xhpize.cpp libxhp.a version.h
 	g++ $(CPPFLAGS) -o $@ $^
 
 rope_test: rope_test.cpp code_rope.o rope_entity.o

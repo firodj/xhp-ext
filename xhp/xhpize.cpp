@@ -15,6 +15,7 @@
 */
 
 #include "xhp_preprocess.hpp"
+#include "version.h"
 #include <vector>
 #include <string.h>
 #include <iostream>
@@ -34,7 +35,10 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(argv[ii], "-t") == 0) {
       tokenize = true;
     } else if (strcmp(argv[ii], "-h") == 0 || strcmp(argv[ii], "-?") == 0) {
-      cerr<< argv[0] << " -i [files] | " << argv[0] << " [file]\n";
+      cerr<< argv[0] << " -i [files] | " << argv[0] << " [file]" << endl;
+      return 1;
+    } else if (strcmp(argv[ii], "-v") == 0) {
+      cerr<< argv[0] << " version " << XHPIZE_VERSION << endl;
       return 1;
     } else {
       files.push_back(argv[ii]);
@@ -70,6 +74,10 @@ int main(int argc, char* argv[]) {
       XHPResult result = xhp_tokenize(*inputStream, code);
       cout<< code;
       cout.flush();
+      if (result == XHPErred) {
+        cerr<< "Error tokenize file `"<<(*ii)<<"`!!" << endl;
+	return 1;
+      }
     } else {
       XHPResult result = xhp_preprocess(*inputStream, code, false, error, errLine);
       inputFile.close();
@@ -85,9 +93,10 @@ int main(int argc, char* argv[]) {
           cout.flush();
         }
         cerr<< "File `"<<(*ii)<<"` xhpized.\n";
+	return 1;
       } else if (result == XHPErred) {
-        cerr<< "Error parsing file `"<<(*ii)<<"`!!\n" << error << " on line " <<
-          errLine << endl;;
+        cerr<< "Error parsing file `"<<(*ii)<<"`!!\n" << error << " on line " << errLine << endl;
+	return 1;
       }
     }
   }

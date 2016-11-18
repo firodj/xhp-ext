@@ -4,6 +4,7 @@
 *.swp
 xhp/parser.yacc.*
 xhp/scanner.lex.*
+xhp/version.h
 xhp/fastpath.cpp
 xhp/libxhp.so
 xhp/xhpize
