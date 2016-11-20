@@ -76,7 +76,8 @@ int main(int argc, char* argv[]) {
       cout.flush();
       if (result == XHPErred) {
         cerr<< "Error tokenize file `"<<(*ii)<<"`!!" << endl;
-	return 1;
+      } else {
+	return 0;
       }
     } else {
       XHPResult result = xhp_preprocess(*inputStream, code, false, error, errLine);
@@ -93,13 +94,12 @@ int main(int argc, char* argv[]) {
           cout.flush();
         }
         cerr<< "File `"<<(*ii)<<"` xhpized.\n";
-	return 1;
+	return 0;
       } else if (result == XHPErred) {
         cerr<< "Error parsing file `"<<(*ii)<<"`!!\n" << error << " on line " << errLine << endl;
-	return 1;
       }
     }
   }
 
-  return 0;
+  return 1;
 }
