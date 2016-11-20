@@ -203,7 +203,7 @@ static zend_op_array* xhp_compile_file(zend_file_handle* f, int type TSRMLS_DC) 
   // TODO: should check for bailout
   zend_op_array* ret = dist_compile_file(&fake_file, type TSRMLS_CC);
 
-  zend_file_handle_dtor(&fake_file);
+  zend_destroy_file_handle(&fake_file);
 
   return ret;
 }
