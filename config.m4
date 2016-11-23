@@ -18,6 +18,13 @@ if test "$PHP_XHP" = "yes"; then
   fi
   AC_MSG_RESULT([found $BISON])
 
+  AC_MSG_CHECKING([for re2c])
+  RE2C=`which re2c 2>/dev/null`
+  if test -z "$RE2C"; then
+    AC_MSG_ERROR([not found])
+  fi
+  AC_MSG_RESULT([found $RE2C])
+
   PHP_ADD_LIBRARY(stdc++,, XHP_SHARED_LIBADD)
   PHP_SUBST(XHP_SHARED_LIBADD)
   PHP_NEW_EXTENSION(xhp, ext.cpp ext_tokeniz.cpp, $ext_shared)
