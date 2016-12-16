@@ -31,8 +31,9 @@ int main(int argc, char* argv[])
     rope.htmlTrim();
     cout << "[" << rope.c_str() << "]" << endl;
 
-    rope = code_rope("jika uang sa&#64;ya &lt;-25 mak&ku&#x040;&quot;til;a dia we-&amp;  n kamu diam");
+    rope = code_rope("jika uang sa&#64;ya &lt;-25 mak&ku&#x040;&quot;til;a dia we-&amp;  n kamu' 'diam");
 
+    rope.squote_escape();
     rope.xhpDecode();
 
     cout << "decode:" << rope.c_str() << endl;

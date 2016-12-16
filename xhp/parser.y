@@ -2049,7 +2049,7 @@ xhp_attribute_decl:
     $1.strip_lines();
     $2.strip_lines();
     yyextra->attribute_decls = yyextra->attribute_decls +
-      "'" + $2 + "'=>array(" + $1 + "," + $3 + ", " + $4 + "),";
+      "'" + $2 + "'=>array(" + $1 + "," + $3 + "," + $4 + "),";
   }
 | T_XHP_LABEL {
     $1.strip_lines();

@@ -808,6 +808,7 @@ BACKQUOTE_CHARS     ("{"*([^$`\\{]|("\\"{ANY_CHAR}))|{BACKQUOTE_LITERAL_DOLLAR})
     if (!yylval->htmlTrim()) {
       YY_BREAK;
     }
+    yylval->squote_escape();
     yylval->xhpDecode();
     tok_return(T_XHP_TEXT);
   }

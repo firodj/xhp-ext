@@ -1,6 +1,6 @@
 #include <iostream>
 #include <algorithm>
-#include <string.h>
+#include <string>
 #include <functional>
 #include <map>
 
@@ -9,10 +9,14 @@ using namespace std;
 
 map<string, string> ENTITIES = {
   {"quot", "\""},
-  {"apos", "'"},
-  {"gt", ">"},
   {"amp", "&"},
-  {"lt", "<"}
+  {"apos", "'"},
+  {"lt", "<"},
+  {"gt", ">"},
+  {"nbsp", " "},
+  {"copy", "\u00a9"},
+  {"reg", "\u00ae"},
+  {"trade", "\u2122"}
 };
 
 struct IsStartEntity
@@ -103,11 +107,10 @@ void code_rope::xhpDecode() {
       string entity;
 
       if (stop_by.target<IsNamedEntity>()) {
-        map<string,string>::iterator it = ENTITIES.find(name);
+        map<string, string>::iterator it = ENTITIES.find(name);
 
         if (it != ENTITIES.end()) {
           entity = it->second;
-
         }
       } else if (stop_by.target<IsDecEntity>()) {
         char buf[5];

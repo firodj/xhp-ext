@@ -43,6 +43,7 @@ class code_rope {
     void xhpLabel(bool global_ns = true);
     bool htmlTrim();
     void xhpDecode();
+    void squote_escape();
 
   friend code_rope operator+(const char*, const code_rope&);
 };

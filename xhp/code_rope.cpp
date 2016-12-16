@@ -178,3 +178,16 @@ bool code_rope::htmlTrim() {
 
   return true;
 }
+
+void code_rope::squote_escape()
+{
+  _rope_t::iterator current = str.mutable_begin(), fix;
+  while (current != str.mutable_end()) {
+    if (*current == '\'') {
+      str.replace(current, current+1, "\\'");
+      current += 2;
+    } else {
+      current++;
+    }
+  }
+}
