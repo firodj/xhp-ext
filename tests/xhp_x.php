@@ -24,7 +24,9 @@ class :x {
     foreach ($this->attrs as $key => $val) {
       $head .= ' '.htmlspecialchars($key).'="'.htmlspecialchars($val, ENT_QUOTES).'"';
     }
-    return $head.'>'.implode('', $this->children).'</' . $this->tagName . '>';
+    return $head.'>'.implode('',
+        array_map(function($child) { return is_string($child) ? htmlspecialchars($child) : $child; }, $this->children)
+    ) . '</' . $this->tagName . '>';
   }
 
   public static function class2element($class) {
