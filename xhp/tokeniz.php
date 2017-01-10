@@ -1,4 +1,4 @@
-#!/usr/bin/php7.0
+#!/usr/bin/php
 <?php
 
 if (extension_loaded('xhp')) {
