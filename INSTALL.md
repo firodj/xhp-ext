@@ -22,7 +22,7 @@ $ make
 Make sure the `modules/xhp.so` linked with the `libxhp.dylib`:
 ```
 $ otool -L modules/xhp.so
-$ ln -s ./xhp/libxhp.dylib /usr/local/lib/libxhp.dylib
+$ ln -s $(pwd)/xhp/libxhp.dylib /usr/local/lib/libxhp.dylib
 ```
 
 Test:
