@@ -1,13 +1,17 @@
 You can install XHP with Homebrew by first enabling some required
 repositories:
 
+  ```
   brew tap homebrew/dupes
   brew tap homebrew/versions
   brew tap homebrew/homebrew-php
+  ```
 
 Once completed, ensure gcc is installed:
 
+  ```
   brew install apple-gcc42
+  ```
 
 Then run any of the following commands:
 
@@ -34,14 +38,18 @@ versions that have been tested to work.
 If PHP was configured correctly, and you meet the system requirements (Linux)
 you should be able to get XHP running just like you would most PHP extensions:
 
+  ```
   phpize
   ./configure
   make
   make install
+  ```
 
 Then add `extension=xhp.so` to your php.ini and you should be good to go. An
 easy way to test if XHP is working is by running:
 
+  ```
   php -r 'echo "XHP!\n"; exit; <a />;'
+  ```
 
 If you get a syntax error then XHP is not working.

@@ -14,6 +14,7 @@ $ brew link bison
 
 Build:
 ```
+$ phpize --clean
 $ phpize
 $ ./configure
 $ make
