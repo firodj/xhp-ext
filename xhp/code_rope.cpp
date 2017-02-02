@@ -45,14 +45,6 @@ void code_rope::prepend(const char* pre_str) {
   this->str.insert(0, pre_str);
 }
 
-const char code_rope::back() const {
-  return this->str.empty() ? 0 : this->str.back();
-}
-
-void code_rope::pop_back() {
-  this->str.pop_back();
-}
-
 void code_rope::strip_lines() {
   lf = no = 0;
 }
