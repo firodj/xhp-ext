@@ -1,4 +1,5 @@
 *.[oa]
+*.obj
 *.[ls]o
 *.dylib
 *.la

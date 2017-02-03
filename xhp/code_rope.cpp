@@ -37,7 +37,7 @@ code_rope::code_rope(const code_rope& str, const size_t no /* = 0 */, const size
   }
 }
 
-const char* code_rope::c_str() const {
+const char* code_rope::c_str() {
     return this->str.c_str();
 }
 

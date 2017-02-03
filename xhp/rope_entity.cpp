@@ -81,6 +81,9 @@ static bool utf8ize(uint32_t v, char* buf /* [5] */) {
 }
 
 void code_rope::xhpDecode() {
+#if 1
+
+#else
   _rope_t::iterator current = str.mutable_begin(), fix;
 
   while ((current = find_if(current, str.mutable_end(), is_start_entity)) != str.mutable_end()) {
@@ -131,5 +134,5 @@ void code_rope::xhpDecode() {
     } else
     current = last;
   }
-
+#endif
 }
