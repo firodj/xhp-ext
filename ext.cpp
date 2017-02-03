@@ -17,6 +17,7 @@
 
 #include "ext.hpp"
 #include "xhp/xhp_preprocess.hpp"
+#include "xhp/xhp.hpp"
 #include "php.h"
 #include "php_ini.h"
 #include "zend.h"
@@ -280,13 +281,23 @@ static zend_bool tokenize(zval *return_value, zend_string *source)
   buffer[in.size() + 1] = 0; // need double NULL for scan_buffer
 
   // Parse the PHP
-  void *lex_state;
-  xhp_init_lexical_state(buffer, in.size()+2, &lex_state);
-  char *code_str;
+  yyscan_t scanner = 0;
+  code_rope new_code;
+  yy_extra_type extra;
+  size_t size = in.size()+2;
 
-  int64_t tok;
+  xhplex_init(&scanner);
+  extra.return_all_tokens = true;
+
+  xhpset_extra(&extra, scanner);
+  xhp_scan_buffer(buffer, size, scanner);
+  char *code_str;
+  int tok;
   size_t lineno;
-  while(tok = xhp_lex(code_str, lineno, lex_state)) {
+
+  while (tok = xhplex(&new_code, scanner)) {
+    size_t lineno = extra.lineno;
+    code_str = (char*)new_code.c_str();
     string code_s(code_str);
 
     if (tok >= 256) {
@@ -305,7 +316,8 @@ static zend_bool tokenize(zval *return_value, zend_string *source)
     }
   }
 
-  xhp_destroy_lexical_state(lex_state);
+  xhplex_destroy(scanner);
+  ////xhp_destroy_lexical_state(lex_state);
 
   return 1;
 }

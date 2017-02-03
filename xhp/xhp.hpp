@@ -98,6 +98,11 @@ class yy_extra_type {
   #include "scanner.lex.hpp"
 #endif
 
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
+
 int xhpparse(void*, code_rope*);
 void xhp_new_push_state(int s, struct yyguts_t* yyg);
 void xhp_new_pop_state(struct yyguts_t* yyg);

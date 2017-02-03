@@ -61,9 +61,10 @@ XHPResult xhp_preprocess(std::string &in, std::string &out, std::string &errDesc
   buffer[in.size() + 1] = 0; // need double NULL for scan_buffer
 
   // Parse the PHP
-  void* scanner;
+  yyscan_t scanner;
   code_rope new_code;
   yy_extra_type extra;
+
   extra.idx_expr = flags.idx_expr;
   extra.include_debug = flags.include_debug;
   extra.insert_token = flags.eval ? T_OPEN_TAG_FAKE : 0;
@@ -109,14 +110,26 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
   buffer[in.size() + 1] = 0; // need double NULL for scan_buffer
 
   // Parse the PHP
-  void *lex_state;
-  xhp_init_lexical_state(buffer, in.size()+2, &lex_state, true);
+  yyscan_t scanner = 0;
+  code_rope new_code;
+  yy_extra_type extra;
+  size_t size = in.size()+2;
+
+  xhplex_init(&scanner);
+  extra.return_all_tokens = true;
+
+  xhpset_extra(&extra, scanner);
+  xhp_scan_buffer(buffer, size, scanner);
+
   char *code_str;
   size_t lineno, oldlineno=0;
 
   int tok;
-  while ((tok = xhp_lex(code_str, lineno, lex_state))) {
+  while (tok = xhplex(&new_code, scanner)) {
     stringstream ss;
+
+    size_t lineno = extra.lineno;
+    code_str = (char*)new_code.c_str();
 
     if (oldlineno != lineno) {
         oldlineno = lineno;
@@ -136,71 +149,12 @@ XHPResult xhp_tokenize(std::string &in, std::string &out)
     out += ss.str();
   }
 
-  xhp_destroy_lexical_state(lex_state);
+  xhplex_destroy(scanner);
 
   return XHPDidNothing;
 }
 
-const char * xhp_get_token_type_name(int64_t tok)
+const char * xhp_get_token_type_name(int tok)
 {
   return yytokname(tok);
-}
-
-//
-// Internal Struct
-struct xhp_lex_state_t
-{
-public:
-  xhp_lex_state_t() {
-    scanner = 0;
-    xhplex_init(&scanner);
-  }
-  ~xhp_lex_state_t() {
-    xhplex_destroy(scanner);
-  }
-  void scan_buffer(char *buffer, size_t size) {
-    xhpset_extra(&extra, scanner);
-    xhp_scan_buffer(buffer, size, scanner);
-  }
-
-  void *scanner;
-  code_rope new_code;
-  yy_extra_type extra;
-};
-
-int
-xhp_lex(char* &code_str, size_t &lineno, void *lex_state)
-{
-  xhp_lex_state_t *l = static_cast<xhp_lex_state_t*>(lex_state);
-  if (l) {
-    int tok = xhplex(&l->new_code, l->scanner);
-    lineno = l->extra.lineno;
-    if (tok) {
-      code_str = (char*)l->new_code.c_str();
-    } else {
-      code_str = 0;
-    }
-    return tok;
-  }
-  return 0;
-}
-
-void
-xhp_init_lexical_state(char *buffer, size_t size, void **lex_state, bool all_tokens /* = true */)
-{
-  xhp_lex_state_t *l = new xhp_lex_state_t();
-
-  l->extra.return_all_tokens = all_tokens;
-  l->scan_buffer(buffer, size);
-
-  *lex_state = l;
-}
-
-void
-xhp_destroy_lexical_state(void *lex_state)
-{
-    xhp_lex_state_t *l = static_cast<xhp_lex_state_t*>(lex_state);
-    if (l) {
-       delete l;
-    }
 }
