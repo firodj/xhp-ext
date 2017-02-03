@@ -123,7 +123,56 @@ void code_rope::xhpLabel(bool global_ns /* = true */) {
   if (global_ns) prepend("\\");
 }
 
-bool code_rope::htmlTrim() {
+bool code_rope::htmlTrim()
+{
+#if 1
+  string s(str.c_str());
+
+  const char *q11 = s.c_str() - 1;
+  const char *q0 = q11 + s.size();
+  const char *q00 = q0;
+  int pos0 = s.size() -1;
+
+  /* empty */
+  if (q0 == q11) return false;
+
+  /* find right space */
+  while (isspace(*q0) && q0 != q11) {
+    --q0; --pos0;
+  }
+
+  /* wtf, blank */
+  if (q0 == q11) {
+    str.clear();
+    return false;
+  }
+
+  /* do right-trim */
+  if (q0 != q00) {
+    str.replace(pos0+1, s.size()-pos0+1, " ");
+  }
+
+  while (q0 != q11) {
+    if (isspace(*q0)) {
+      int pos1 = pos0 - 1;
+      const char *q1 = q0 - 1;
+
+      /* find where spaces stop */
+      while ((q1 != q11) && isspace(*q1)) {
+        --q1; --pos1;
+      }
+
+      /* do mid-trim/left-trim */
+      pos1++; q1++;
+      str.replace(pos1, pos0-pos1+1, " ");
+      q0 = q1; pos0 = pos1;
+    }
+
+    --q0; --pos0;
+  }
+
+  return true;
+#else
   _rope_t::iterator p0 = str.mutable_begin(), p00 = p0;
   _rope_t::iterator p1 = str.mutable_end();
 
@@ -169,10 +218,24 @@ bool code_rope::htmlTrim() {
   }
 
   return true;
+#endif
 }
 
 void code_rope::squote_escape()
 {
+#if 1
+  string s(str.c_str());
+  const char *p0 = s.c_str();
+  const char *p11 = p0 + s.size();
+  size_t pos=0;
+  while (p0 != p11) {
+    if (*p0 == '\'') {
+      str.replace(pos, 1, "\\'");
+      pos++;
+    }
+    p0++; pos++;
+  }
+#else
   _rope_t::iterator current = str.mutable_begin(), fix;
   while (current != str.mutable_end()) {
     if (*current == '\'') {
@@ -182,4 +245,5 @@ void code_rope::squote_escape()
       current++;
     }
   }
+#endif
 }
