@@ -9,7 +9,7 @@ xhp/version.h
 xhp/fastpath.cpp
 xhp/libxhp.so
 xhp/xhpize
-xhp/rope_test
+xhp/rope_test.exe
 /.deps
 /.libs
 /Makefile

@@ -48,7 +48,10 @@ version.h:
 xhpize: xhpize.cpp libxhp.dylib version.h
 	g++ $(CPPFLAGS) -L. -lxhp -o $@ $<
 
-rope_test: rope_test.cpp code_rope.o rope_entity.o
+rope_test.exe: rope_test.cpp code_rope.o rope_entity.o
 	g++ $(CPPFLAGS) -o $@ $^
+
+rope_test: rope_test.exe rope_test.expect
+	./rope_test.exe | diff rope_test.expect -
 
 .PHONY: all clean tags
