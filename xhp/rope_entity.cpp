@@ -16,9 +16,14 @@ map<string, string> ENTITIES = {
   {"nbsp", " "},
   {"copy", "\u00a9"},
   {"reg", "\u00ae"},
-  {"trade", "\u2122"}
+  {"trade", "\u2122"},
+  {"hyphen", "\u2010"},
+  {"dash", "\u2010"},
+  {"ndash", "\u2013"},
+  {"mdash", "\u2014"},
 };
 
+#if 0
 struct IsStartEntity
 {
   bool operator()(int ch) { return ch == '&'; }
@@ -54,6 +59,7 @@ struct IsDecEntity
     return true;
   }
 } is_dec_entity;
+#endif
 
 static bool utf8ize(uint32_t v, char* buf /* [5] */) {
   if (v <= 0x7f) { // 0xxxxxxx
@@ -82,6 +88,83 @@ static bool utf8ize(uint32_t v, char* buf /* [5] */) {
 
 void code_rope::xhpDecode() {
 #if 1
+  string s(str.c_str());
+
+  const char *current = s.c_str();
+  const char *end = current + s.size();
+  size_t pos = 0;
+  while (current != end) {
+    if (*current == '&') {
+      enum {EN_NAME, EN_HEX, EN_DEC} ent = EN_NAME;
+      const char *fix = current;
+      size_t pos_fix = pos;
+
+      ++pos; if (++current == end) break;
+
+      if (*current == '#') {
+        ent = EN_DEC;
+        ++pos; if (++current == end) break;
+        if (*current == 'x') {
+          ent = EN_HEX;
+          ++pos; if (++current == end) break;
+        }
+      }
+
+      const char *last = current;
+      size_t len = 0;
+      for(;last != end; ++last, ++len) {
+        if (*last == ';') break;
+
+        if (ent <= EN_DEC) {
+          if (*last >= '0' && *last <= '9') continue;
+        }
+        if (ent <= EN_HEX) {
+          if (*last >= 'a' && *last <= 'f') continue;
+          if (*last >= 'A' && *last <= 'F') continue;
+        }
+        if (*last >= 'g' && *last <= 'z') continue;
+        if (*last >= 'G' && *last <= 'Z') continue;
+        break;
+      }
+
+      if (last == end) break;
+      if (*last == ';') {
+        string name(current, len);
+        string entity;
+
+        if (ent == EN_DEC) {
+          char buf[5];
+          if (utf8ize(atoi(name.c_str()), buf)) {
+            entity = buf;
+            len += 3; // skip: &#;
+          }
+        } else if (ent == EN_HEX) {
+          char buf[5], *_end;
+          if (utf8ize(strtol(name.c_str(), &_end, 16), buf)) {
+            entity = buf;
+            len += 4; // skip: &#x;
+          }
+        } else {
+          map<string, string>::iterator it = ENTITIES.find(name);
+          if (it != ENTITIES.end()) {
+            entity = it->second;
+            len += 2; // skip: &;
+          }
+        }
+
+        if (!entity.empty()) {
+          str.replace(pos_fix, len, entity.c_str());
+          current = last;
+          pos = pos_fix + entity.length() -1;
+        }
+      } else {
+        current = fix;
+        pos = pos_fix;
+      }
+    }
+
+    current++; pos++;
+  }
 
 #else
   _rope_t::iterator current = str.mutable_begin(), fix;
