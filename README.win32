@@ -1,0 +1,10 @@
+dumpbin /exports libxhp.dll
+
+lib /machine:x86 /def:libxhp.def
+
+cl /EHsc /Zi /Fdxhpize.pdb xhpize.cpp libxhp.lib /MD
+
+dumpbin /imports xhpize.exe
+
+-fno-rtti
+-fno-exceptions

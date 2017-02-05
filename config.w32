@@ -1,0 +1,9 @@
+ARG_ENABLE("xhp", "XHP support", "no");
+if (PHP_XHP != "no") {    
+    if (CHECK_LIB("xhp.lib", "xhp", PHP_XHP + "\\xhp")) {
+        EXTENSION("xhp", "ext.cpp", true);
+        ADD_FLAG("CFLAGS_XHP", "/EHsc");
+    } else {
+       WARNING("xhp not enabled; libraries and headers not found");
+    }
+}

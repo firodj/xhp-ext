@@ -35,8 +35,31 @@ struct xhp_flags_t {
   bool moderate_parse;
 };
 
-XHPResult xhp_preprocess(std::istream &in, std::string &out, bool isEval,
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef WIN32
+  #ifdef BUILDING_XHP_DLL
+    #define XHP_DLL __declspec(dllexport)
+  #else
+    #define XHP_DLL __declspec(dllimport)
+  #endif
+  #define XHP_CALL __cdecl
+#else
+  #define XHP_DLL
+  #define XHP_CALL
+#endif
+
+XHP_DLL XHPResult XHP_CALL xhp_preprocess(std::istream &in, std::string &out, bool isEval,
                          std::string &errDescription, uint32_t &errLineno);
+
+XHP_DLL XHPResult XHP_CALL xhp_tokenize(std::istream &in, std::string &out);
+
+#ifdef __cplusplus
+}
+#endif
 
 XHPResult xhp_preprocess(std::string &in, std::string &out, bool isEval,
                          std::string &errDescription, uint32_t &errLineno);
@@ -45,7 +68,6 @@ XHPResult xhp_preprocess(std::string &in, std::string &out,
                          std::string &errDescription, uint32_t &errLineno,
                          const xhp_flags_t &flags);
 
-XHPResult xhp_tokenize(std::istream &in, std::string &out);
 XHPResult xhp_tokenize(std::string &in, std::string &out);
 
 const char * xhp_get_token_type_name(int tok);
