@@ -23,11 +23,11 @@ using namespace std;
 
 code_rope::code_rope(const _rope_t str, const size_t no /* = 0 */, const size_t lf /* = 0 */) : str(str), lf(lf), no(no) {}
 
-code_rope::code_rope(const code_rope& str, const size_t no /* = 0 */, const size_t lf /* = 0 */) : str(str.str), lf(lf), no(no) {
-  if (str.lf || str.no) {
+code_rope::code_rope(const code_rope& cr, const size_t no /* = 0 */, const size_t lf /* = 0 */) : str(cr.str), lf(lf), no(no) {
+  if (cr.lf || cr.no) {
     if (!no && !lf) {
-      this->lf = str.lf;
-      this->no = str.no;
+      this->lf = cr.lf;
+      this->no = cr.no;
     } else {
       throw new std::exception();
     }

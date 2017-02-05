@@ -14,15 +14,20 @@
   +----------------------------------------------------------------------+
 */
 
+#if 0
 #include <ext/rope>
 #include <ext/pool_allocator.h>
+#endif
 #include "rope.hpp"
 
 class code_rope {
   public:
-    //typedef __gnu_cxx::rope<char, __gnu_cxx::__pool_alloc<char> > _rope_t;
-    //typedef __gnu_cxx::crope _rope_t;
+#if 1
     typedef jrope _rope_t;
+#else
+    typedef __gnu_cxx::rope<char, __gnu_cxx::__pool_alloc<char> > _rope_t;
+    //typedef __gnu_cxx::crope _rope_t;
+#endif
 
   protected:
     _rope_t str;
