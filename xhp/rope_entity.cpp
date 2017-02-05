@@ -97,16 +97,15 @@ void code_rope::xhpDecode() {
     if (*current == '&') {
       enum {EN_NAME, EN_HEX, EN_DEC} ent = EN_NAME;
       const char *fix = current;
-      size_t pos_fix = pos;
 
-      ++pos; if (++current == end) break;
+      if (++current == end) break;
 
       if (*current == '#') {
         ent = EN_DEC;
-        ++pos; if (++current == end) break;
+        if (++current == end) break;
         if (*current == 'x') {
           ent = EN_HEX;
-          ++pos; if (++current == end) break;
+          if (++current == end) break;
         }
       }
 
@@ -153,13 +152,12 @@ void code_rope::xhpDecode() {
         }
 
         if (!entity.empty()) {
-          str.replace(pos_fix, len, entity.c_str());
+          //cout << name << " -< [" << entity << "] " << entity.length() << endl;
+          str.replace(pos, len, entity.c_str());
           current = last;
-          pos = pos_fix + entity.length() -1;
         }
       } else {
         current = fix;
-        pos = pos_fix;
       }
     }
 
