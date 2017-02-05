@@ -3,14 +3,20 @@
 Requirements:
 ```
 $ brew install php70
-$ brew install gcc5
 $ brew install flex  # flex 2.6.x
 $ brew install bison # bison 3.0.x
 $ brew install re2c
-$ brew link gcc5
 $ brew link flex
 $ brew link bison
 ```
+
+To enable SGI_ROPE install gcc 5:
+```
+$ brew install gcc5
+$ brew link gcc5
+```
+Make sure `/usr/local/bin/gcc` and `/usr/local/bin/g++` link to
+these gcc 5.
 
 Install build tool:
 ```
