@@ -12,18 +12,28 @@ $ brew link flex
 $ brew link bison
 ```
 
-Build:
+Install build tool:
 ```
 $ phpize --clean
 $ phpize
 $ ./configure
+```
+
+Patch:
+
+If you get error regarding `__ZNSt8ios_base4InitD1Ev` it is because the `libtool`
+using `gcc` instead `g++` compiler in which it doesn't link to `libstdc++`.
+Change the command produced in `Makefile` from `--mode=link $(CC)` into `--mode=link $(CXX)`
+on the rule `./xhp.la` (bottom).
+
+Build:
+```
 $ make
 ```
 
-Make sure the `modules/xhp.so` linked with the `libxhp.dylib`:
+Make sure the `modules/xhp.so` linked with `libstdc++`:
 ```
 $ otool -L modules/xhp.so
-$ ln -s $(pwd)/xhp/libxhp.dylib /usr/local/lib/libxhp.dylib
 ```
 
 Test:
@@ -37,3 +47,4 @@ $ make install
 $ echo "extension=xhp.so" > /usr/local/etc/php/7.0/conf.d/ext-xhp.ini
 $ brew services restart php70
 ```
+
