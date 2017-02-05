@@ -535,7 +535,7 @@ ZEND_FUNCTION(__xhp_idx) {
 ZEND_FUNCTION(xhp_preprocess_code) {
   // Parse zend params
   char *code;
-  int code_len;
+  size_t code_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &code, &code_len) == FAILURE) {
     RETURN_NULL();
   }
