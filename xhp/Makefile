@@ -35,17 +35,14 @@ fastpath.cpp: fastpath.re
 %.o: %.cpp
 	g++ -c $(CPPFLAGS) -o $@ $<
 
-%.obj: %.c
-	gcc -c $(CFLAGS) -o $@ $<
-
 xhp_preprocess.o: xhp_preprocess.cpp scanner.lex.hpp parser.yacc.hpp
 parser.yacc.o: scanner.lex.hpp
 scanner.lex.o: parser.yacc.hpp
 
-libxhp.a: code_rope.o rope.obj rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
+libxhp.a: code_rope.o rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
 	$(AR) -crs $@ $^
 
-libxhp.dylib: code_rope.o rope.obj rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
+libxhp.dylib: code_rope.o rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
 	g++ -dynamiclib -o $@ $^
 
 version.h:
@@ -54,7 +51,7 @@ version.h:
 xhpize: xhpize.cpp libxhp.a version.h
 	g++ $(CPPFLAGS) -L. -lxhp -o $@ $<
 
-rope_test.exe: rope_test.cpp code_rope.o rope.obj rope_entity.o
+rope_test.exe: rope_test.cpp code_rope.o rope.o rope_entity.o
 	g++ $(CPPFLAGS) -o $@ $^
 
 rope_test: rope_test.exe rope_test.expect
