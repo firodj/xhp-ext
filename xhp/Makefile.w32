@@ -1,0 +1,51 @@
+CPPFLAGS = /EHsc /MD /TP /I.
+
+all: libxhp.lib
+
+clean:
+	del libxhp.lib
+	del xhpize.exe
+	del rope_test.exe
+	del parser.yacc.cpp 
+	del parser.yacc.hpp
+	del parser.yacc.output
+	del scanner.lex.cpp
+	del scanner.lex.hpp
+	del fastpath.cpp
+	del version.h
+	del *.obj
+
+parser.yacc.cpp: parser.y
+	win_bison --debug --verbose -d -o $@ $**
+
+parser.yacc.hpp: parser.yacc.cpp
+
+scanner.lex.cpp: scanner.l
+	win_flex --wincompat -C --header-file=scanner.lex.hpp -o $@ -d $**
+
+scanner.lex.hpp: scanner.lex.cpp
+
+fastpath.cpp: fastpath.re
+	re2c -c -o $@ $**
+xhpize.obj: version.h
+
+xhp_preprocess.obj: xhp_preprocess.cpp scanner.lex.hpp parser.yacc.hpp
+parser.yacc.obj: scanner.lex.hpp
+scanner.lex.obj: parser.yacc.hpp
+
+libxhp.lib: code_rope.obj rope.obj rope_entity.obj scanner.lex.obj parser.yacc.obj fastpath.obj xhp_preprocess.obj
+	lib /out:$@ $**
+
+version.h:
+	git show -s --format="#define XHPIZE_VERSION \"%h - %ci\"" HEAD > version.h
+
+xhpize.exe: xhpize.obj libxhp.lib 
+	link /out:$@ $**
+    
+rope_test.exe: rope_test.obj code_rope.obj rope.obj rope_entity.obj
+	link /out:$@ $**
+
+rope_test: rope_test.exe
+    rope_test.exe
+
+.PHONY: all clean tags

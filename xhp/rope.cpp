@@ -12,6 +12,11 @@
 #include <assert.h>
 #include "rope.h"
 
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 // The number of bytes the rope head structure takes up
 static const size_t ROPE_SIZE = sizeof(rope) + sizeof(rope_node) * ROPE_MAX_HEIGHT;
 
@@ -121,7 +126,7 @@ size_t rope_write_cstr(rope *r, uint8_t *dest) {
 
   if (num_bytes) {
     uint8_t *p = dest;
-    for (rope_node* restrict n = &r->head; n != NULL; n = n->nexts[0].node) {
+    for (rope_node* __restrict n = &r->head; n != NULL; n = n->nexts[0].node) {
       memcpy(p, n->str, n->num_bytes);
       p += n->num_bytes;
     }
@@ -757,7 +762,7 @@ void _rope_check(rope *r) {
 
   // The offsets here are used to store the total distance travelled from the start
   // of the rope.
-  rope_iter iter = {};
+  rope_iter iter = {0};
   for (int i = 0; i < r->head.height; i++) {
     iter.s[i].node = &r->head;
   }

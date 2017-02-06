@@ -8,9 +8,9 @@ xhp/parser.yacc.*
 xhp/scanner.lex.*
 xhp/version.h
 xhp/fastpath.cpp
-xhp/libxhp.so
 xhp/xhpize
-xhp/rope_test.exe
+xhp/*.exe
+xhp/libxhp.*
 /.deps
 /.libs
 /Makefile
