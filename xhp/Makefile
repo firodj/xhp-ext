@@ -46,8 +46,6 @@ version.h:
 
 xhpize: xhpize.cpp libxhp.a version.h
 	g++ $(CPPFLAGS) -o $@ $^
-# xhpize: xhpize.cpp libxhp.a version.h
-#	g++ $(CPPFLAGS) -L. -lxhp -o $@ $<
 
 rope_test.exe: rope_test.cpp code_rope.o rope.o rope_entity.o
 	g++ $(CPPFLAGS) -o $@ $^
