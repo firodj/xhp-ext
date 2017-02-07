@@ -8,6 +8,8 @@ ifdef PROFILE
 CPPFLAGS += -pg
 endif
 
+CPPFLAGS += -DUSE_SGI_ROPE
+
 FLEX = `which flex35 2>/dev/null || which flex 2>/dev/null`
 
 all: libxhp.a

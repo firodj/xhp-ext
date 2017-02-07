@@ -24,6 +24,8 @@ if test "$PHP_XHP" = "yes"; then
   fi
   AC_MSG_RESULT([found $RE2C])
 
+  CXXFLAGS="$CXXFLAGS -DUSE_SGI_ROPE"
+
   PHP_ADD_LIBRARY(stdc++,, XHP_SHARED_LIBADD)
   PHP_SUBST(XHP_SHARED_LIBADD)
   PHP_NEW_EXTENSION(xhp, ext.cpp ext_tokeniz.cpp, $ext_shared)

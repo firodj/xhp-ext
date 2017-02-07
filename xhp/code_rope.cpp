@@ -125,7 +125,53 @@ void code_rope::xhpLabel(bool global_ns /* = true */) {
 
 bool code_rope::htmlTrim()
 {
-#if 1
+#ifdef USE_SGI_ROPE
+  _rope_t::iterator p0 = str.mutable_begin(), p00 = p0;
+  _rope_t::iterator p1 = str.mutable_end();
+
+  /* is empty */
+  if (p0 == p1) return false;
+
+  /* find position to trim left */
+  while (isspace(*p0) && p0 != p1) ++p0;
+
+  /* howlee siht, nothing found! */
+  if (p0 == p1) {
+    str.clear();
+    return false;
+  }
+
+  /* TRIM! left */
+  if (p0 != p00) {
+    *--p0 = ' ';
+    str.erase(p00, p0);
+  }
+
+  _rope_t::reverse_iterator q0 = str.mutable_rbegin(), q00 = q0;
+  _rope_t::reverse_iterator q1 = str.mutable_rend();
+
+  /* find position to trim right */
+  while (isspace(*q0) && q0 != q1) ++q0;
+
+  /* TRIM! right */
+  if (q0 != q00) {
+    *--q0 = ' ';
+    str.erase(q0.base(), q00.base()+1);
+  }
+
+  /* find multiple sequences of spaces in the middle */
+  for (q0 = str.mutable_rbegin()+1; q0 != str.mutable_rend(); ++q0) {
+    if (isspace(*q0)) {
+      q1 = q0+1;
+      while ((q1 != str.mutable_rend()) && isspace(*q1)) ++q1;
+
+      *--q1 = ' ';
+      q0 = _rope_t::reverse_iterator( str.erase(q1.base(), q0.base()) );
+    }
+  }
+
+  return true;
+#else
   string s(str.c_str());
 
   const char *q11 = s.c_str() - 1;
@@ -172,58 +218,22 @@ bool code_rope::htmlTrim()
   }
 
   return true;
-#else
-  _rope_t::iterator p0 = str.mutable_begin(), p00 = p0;
-  _rope_t::iterator p1 = str.mutable_end();
-
-  /* is empty */
-  if (p0 == p1) return false;
-
-  /* find position to trim left */
-  while (isspace(*p0) && p0 != p1) ++p0;
-
-  /* howlee siht, nothing found! */
-  if (p0 == p1) {
-    str.clear();
-    return false;
-  }
-
-  /* TRIM! left */
-  if (p0 != p00) {
-    *--p0 = ' ';
-    str.erase(p00, p0);
-  }
-
-  _rope_t::reverse_iterator q0 = str.mutable_rbegin(), q00 = q0;
-  _rope_t::reverse_iterator q1 = str.mutable_rend();
-
-  /* find position to trim right */
-  while (isspace(*q0) && q0 != q1) ++q0;
-
-  /* TRIM! right */
-  if (q0 != q00) {
-    *--q0 = ' ';
-    str.erase(q0.base(), q00.base()+1);
-  }
-
-  /* find multiple sequences of spaces in the middle */
-  for (q0 = str.mutable_rbegin()+1; q0 != str.mutable_rend(); ++q0) {
-    if (isspace(*q0)) {
-      q1 = q0+1;
-      while ((q1 != str.mutable_rend()) && isspace(*q1)) ++q1;
-
-      *--q1 = ' ';
-      q0 = _rope_t::reverse_iterator( str.erase(q1.base(), q0.base()) );
-    }
-  }
-
-  return true;
 #endif
 }
 
 void code_rope::squote_escape()
 {
-#if 1
+#ifdef USE_SGI_ROPE
+  _rope_t::iterator current = str.mutable_begin(), fix;
+  while (current != str.mutable_end()) {
+    if (*current == '\'') {
+      str.replace(current, current+1, "\\'");
+      current += 2;
+    } else {
+      current++;
+    }
+  }
+#else
   string s(str.c_str());
   const char *p0 = s.c_str();
   const char *p11 = p0 + s.size();
@@ -234,16 +244,6 @@ void code_rope::squote_escape()
       pos++;
     }
     p0++; pos++;
-  }
-#else
-  _rope_t::iterator current = str.mutable_begin(), fix;
-  while (current != str.mutable_end()) {
-    if (*current == '\'') {
-      str.replace(current, current+1, "\\'");
-      current += 2;
-    } else {
-      current++;
-    }
   }
 #endif
 }

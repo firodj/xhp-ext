@@ -14,19 +14,20 @@
   +----------------------------------------------------------------------+
 */
 
-#if 0
+#ifdef USE_SGI_ROPE
 #include <ext/rope>
 #include <ext/pool_allocator.h>
-#endif
+#else
 #include "rope.hpp"
+#endif
 
 class code_rope {
   public:
-#if 1
-    typedef jrope _rope_t;
-#else
+#ifdef USE_SGI_ROPE
     typedef __gnu_cxx::rope<char, __gnu_cxx::__pool_alloc<char> > _rope_t;
     //typedef __gnu_cxx::crope _rope_t;
+#else
+    typedef jrope _rope_t;
 #endif
 
   protected:

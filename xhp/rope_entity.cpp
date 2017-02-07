@@ -23,7 +23,7 @@ map<string, string> ENTITIES = {
   {"mdash", "\u2014"},
 };
 
-#if 0
+#ifdef USE_SGI_ROPE
 struct IsStartEntity
 {
   bool operator()(int ch) { return ch == '&'; }
@@ -87,7 +87,58 @@ static bool utf8ize(uint32_t v, char* buf /* [5] */) {
 }
 
 void code_rope::xhpDecode() {
-#if 1
+#ifdef USE_SGI_ROPE
+  _rope_t::iterator current = str.mutable_begin(), fix;
+
+  while ((current = find_if(current, str.mutable_end(), is_start_entity)) != str.mutable_end()) {
+    fix = current;
+    function<bool(int)> stop_by = is_named_entity;
+
+    if (++current == str.mutable_end()) break;
+
+    if (*current == '#') {
+      stop_by = is_dec_entity;
+      if (++current == str.mutable_end()) break;
+
+      if (*current == 'x') {
+        stop_by = is_hex_entity;
+        if (++current == str.mutable_end()) break;
+      }
+    }
+
+    _rope_t::iterator last = find_if(current, str.mutable_end(), stop_by);
+    if (last == str.mutable_end()) break;
+
+    if (*last == ';') {
+      string name = str.substr(current, last++).c_str();
+      string entity;
+
+      if (stop_by.target<IsNamedEntity>()) {
+        map<string, string>::iterator it = ENTITIES.find(name);
+
+        if (it != ENTITIES.end()) {
+          entity = it->second;
+        }
+      } else if (stop_by.target<IsDecEntity>()) {
+        char buf[5];
+        if (utf8ize(atoi(name.c_str()), buf)) {
+          entity = buf;
+        }
+      } else if (stop_by.target<IsHexEntity>()) {
+        char buf[5], *_end;
+        if (utf8ize(strtol(name.c_str(), &_end, 16), buf)) {
+          entity = buf;
+        }
+      }
+
+      if (!entity.empty()) {
+          str.replace(fix, last, entity.c_str());
+          current = fix + entity.length();
+      }
+    } else
+    current = last;
+  }
+#else
   string s(str.c_str());
 
   const char *current = s.c_str();
@@ -162,58 +213,6 @@ void code_rope::xhpDecode() {
     }
 
     current++; pos++;
-  }
-
-#else
-  _rope_t::iterator current = str.mutable_begin(), fix;
-
-  while ((current = find_if(current, str.mutable_end(), is_start_entity)) != str.mutable_end()) {
-    fix = current;
-    function<bool(int)> stop_by = is_named_entity;
-
-    if (++current == str.mutable_end()) break;
-
-    if (*current == '#') {
-      stop_by = is_dec_entity;
-      if (++current == str.mutable_end()) break;
-
-      if (*current == 'x') {
-        stop_by = is_hex_entity;
-        if (++current == str.mutable_end()) break;
-      }
-    }
-
-    _rope_t::iterator last = find_if(current, str.mutable_end(), stop_by);
-    if (last == str.mutable_end()) break;
-
-    if (*last == ';') {
-      string name = str.substr(current, last++).c_str();
-      string entity;
-
-      if (stop_by.target<IsNamedEntity>()) {
-        map<string, string>::iterator it = ENTITIES.find(name);
-
-        if (it != ENTITIES.end()) {
-          entity = it->second;
-        }
-      } else if (stop_by.target<IsDecEntity>()) {
-        char buf[5];
-        if (utf8ize(atoi(name.c_str()), buf)) {
-          entity = buf;
-        }
-      } else if (stop_by.target<IsHexEntity>()) {
-        char buf[5], *_end;
-        if (utf8ize(strtol(name.c_str(), &_end, 16), buf)) {
-          entity = buf;
-        }
-      }
-
-      if (!entity.empty()) {
-          str.replace(fix, last, entity.c_str());
-          current = fix + entity.length();
-      }
-    } else
-    current = last;
   }
 #endif
 }
