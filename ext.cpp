@@ -15,9 +15,9 @@
   +----------------------------------------------------------------------+
 */
 
-#include "ext.hpp"
 #include "xhp/xhp_preprocess.hpp"
 #include "xhp/xhp.hpp"
+#include "ext.hpp"
 #include "php.h"
 #include "php_ini.h"
 #include "zend.h"

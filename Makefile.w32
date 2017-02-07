@@ -1,0 +1,13 @@
+CPPFLAGS = /DZEND_DEBUG=0 /DZTS=1 /DZEND_WIN32=1 /DPHP_WIN32=1 /DZEND_WIN32_FORCE_INLINE /D_USE_32BIT_TIME_T=1 /W3 /wd4996 /Ox /Zi /Gs /MD /EHsc /TP /FD
+PHPSRC = C:\php-sdk\phpdev\vc14\x86\php-7.0.14-src
+PHPBIN = C:\php70
+CPPFLAGS = $(CPPFLAGS) /I$(PHPSRC)\main /I$(PHPSRC)\Zend /I$(PHPSRC)\TSRM /I$(PHPSRC)
+LINKFLAGS = /LIBPATH:$(PHPBIN)/dev /LIBPATH:xhp /dll
+
+all: php_xhp.dll
+
+clean:
+  del *.obj
+
+php_xhp.dll: ext.obj ext_tokeniz.obj
+  link $(LINKFLAGS) /out:$@ $** php7ts.lib libxhp.lib

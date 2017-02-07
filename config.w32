@@ -1,8 +1,8 @@
 ARG_ENABLE("xhp", "XHP support", "no");
-if (PHP_XHP != "no") {    
-    if (CHECK_LIB("xhp.lib", "xhp", PHP_XHP + "\\xhp")) {
-        EXTENSION("xhp", "ext.cpp", true);
-        ADD_FLAG("CFLAGS_XHP", "/EHsc");
+if (PHP_XHP != "no") {
+	if (CHECK_LIB("libxhp.lib", "xhp", configure_module_dirname + "\\xhp")) {
+        EXTENSION("xhp", "ext.cpp ext_tokeniz.cpp", true);
+        ADD_FLAG("CFLAGS_XHP", "/EHsc /TP");
     } else {
        WARNING("xhp not enabled; libraries and headers not found");
     }
