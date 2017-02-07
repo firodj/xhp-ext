@@ -20,6 +20,8 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include <sys/time.h>
+
 using namespace std;
 
 int main(int argc, char* argv[]) {
@@ -70,17 +72,25 @@ int main(int argc, char* argv[]) {
 
     string code, error;
     uint32_t errLine;
+    struct timeval start, end;
+
+    gettimeofday(&start, NULL);
     if (tokenize) {
       XHPResult result = xhp_tokenize(*inputStream, code);
+      gettimeofday(&end, NULL);
+
       cout<< code;
       cout.flush();
       if (result == XHPErred) {
         cerr<< "Error tokenize file `"<<(*ii)<<"`!!" << endl;
+        return 1;
       } else {
-	return 0;
+        //
       }
     } else {
       XHPResult result = xhp_preprocess(*inputStream, code, false, error, errLine);
+      gettimeofday(&end, NULL);
+
       inputFile.close();
       if (result == XHPRewrote) {
         if (in_place) {
@@ -94,12 +104,16 @@ int main(int argc, char* argv[]) {
           cout.flush();
         }
         cerr<< "File `"<<(*ii)<<"` xhpized.\n";
-	return 0;
       } else if (result == XHPErred) {
         cerr<< "Error parsing file `"<<(*ii)<<"`!!\n" << error << " on line " << errLine << endl;
+        return 1;
       }
     }
+
+    double elapsedTime = end.tv_sec - start.tv_sec;
+    elapsedTime += (end.tv_usec - start.tv_usec) / 1e6;
+    cerr<< "Time: "<<(elapsedTime*1000)<<" ms.\n";
   }
 
-  return 1;
+  return 0;
 }
