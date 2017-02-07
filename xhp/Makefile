@@ -1,14 +1,11 @@
 ifdef DEBUG
 CPPFLAGS = -fPIC -ggdb -Wall -DDEBUG -std=c++11
-CFLAGS= -fPIC -ggdb -Wall -DDEBUG -std=c99
 else
 CPPFLAGS = -fPIC -g -Wall -O3 -minline-all-stringops -std=c++11
-CFLAGS= -fPIC -g -Wall -O3 -minline-all-stringops -std=c99
 endif
 
 ifdef PROFILE
 CPPFLAGS += -pg
-CFLAGS += -pg
 endif
 
 FLEX = `which flex35 2>/dev/null || which flex 2>/dev/null`
@@ -16,7 +13,7 @@ FLEX = `which flex35 2>/dev/null || which flex 2>/dev/null`
 all: libxhp.a
 
 clean:
-	-rm libxhp.a libxhp.dylib xhpize parser.yacc.cpp scanner.lex.cpp scanner.lex.hpp parser.yacc.output parser.yacc.hpp fastpath.cpp version.h *.o *.obj 2>/dev/null
+	-rm libxhp.a xhpize parser.yacc.cpp scanner.lex.cpp scanner.lex.hpp parser.yacc.output parser.yacc.hpp fastpath.cpp version.h *.o 2>/dev/null
 
 parser.yacc.cpp: parser.y
 	bison --debug --verbose -d -o $@ $<
@@ -42,14 +39,13 @@ scanner.lex.o: parser.yacc.hpp
 libxhp.a: code_rope.o rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
 	$(AR) -crs $@ $^
 
-libxhp.dylib: code_rope.o rope.o rope_entity.o scanner.lex.o parser.yacc.o fastpath.o xhp_preprocess.o
-	g++ -dynamiclib -o $@ $^
-
 version.h:
 	echo "#define XHPIZE_VERSION \""`git show -s --format="%h - %ci" HEAD`"\"" >> version.h
 
 xhpize: xhpize.cpp libxhp.a version.h
-	g++ $(CPPFLAGS) -L. -lxhp -o $@ $<
+	g++ $(CPPFLAGS) -o $@ $^
+# xhpize: xhpize.cpp libxhp.a version.h
+#	g++ $(CPPFLAGS) -L. -lxhp -o $@ $<
 
 rope_test.exe: rope_test.cpp code_rope.o rope.o rope_entity.o
 	g++ $(CPPFLAGS) -o $@ $^
