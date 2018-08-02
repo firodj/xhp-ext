@@ -24,7 +24,9 @@ if test "$PHP_XHP" = "yes"; then
   fi
   AC_MSG_RESULT([found $RE2C])
 
-  CXXFLAGS="$CXXFLAGS -DUSE_SGI_ROPE"
+  if test `uname -s` == "Linux"; then
+    CXXFLAGS="$CXXFLAGS -DUSE_SGI_ROPE"
+  fi
 
   PHP_ADD_LIBRARY(stdc++,, XHP_SHARED_LIBADD)
   PHP_SUBST(XHP_SHARED_LIBADD)

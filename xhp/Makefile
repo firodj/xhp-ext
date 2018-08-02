@@ -1,14 +1,19 @@
 ifdef DEBUG
-CPPFLAGS = -fPIC -ggdb -Wall -DDEBUG -std=c++11
+CXXFLAGS = -fPIC -ggdb -Wall -DDEBUG -std=c++11
 else
-CPPFLAGS = -fPIC -g -Wall -O3 -minline-all-stringops -std=c++11
+CXXFLAGS = -fPIC -g -Wall -O3 -minline-all-stringops -std=c++11
 endif
 
 ifdef PROFILE
-CPPFLAGS += -pg
+CXXFLAGS += -pg
 endif
 
-CPPFLAGS += -DUSE_SGI_ROPE
+UNAME_S := $(shell uname -s)
+
+CXX = g++
+ifeq ($(UNAME_S),Linux)
+	CXXFLAGS += -DUSE_SGI_ROPE
+endif
 
 FLEX = `which flex35 2>/dev/null || which flex 2>/dev/null`
 
@@ -32,7 +37,7 @@ fastpath.cpp: fastpath.re
 	re2c -c -o $@ $<
 
 %.o: %.cpp
-	g++ -c $(CPPFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 xhp_preprocess.o: xhp_preprocess.cpp scanner.lex.hpp parser.yacc.hpp
 parser.yacc.o: scanner.lex.hpp
@@ -45,10 +50,10 @@ version.h:
 	echo "#define XHPIZE_VERSION \""`git show -s --format="%h - %ci" HEAD`"\"" >> version.h
 
 xhpize: xhpize.cpp libxhp.a version.h
-	g++ $(CPPFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 rope_test.exe: rope_test.cpp code_rope.o rope.o rope_entity.o
-	g++ $(CPPFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 rope_test: rope_test.exe rope_test.expect
 	./rope_test.exe | diff rope_test.expect -
